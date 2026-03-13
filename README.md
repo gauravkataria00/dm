@@ -37,7 +37,7 @@ A comprehensive web application for managing dairy farm operations, including cl
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/gauravkataria00/dm.git
    cd dairy-project
    ```
 
