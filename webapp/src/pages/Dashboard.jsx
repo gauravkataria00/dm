@@ -47,6 +47,14 @@ export default function Dashboard() {
 
   useEffect(() => {
     loadDashboardData();
+    
+    // Set up automatic refresh every 60 seconds
+    const intervalId = setInterval(() => {
+      loadDashboardData();
+    }, 60000);
+    
+    // Cleanup interval on component unmount
+    return () => clearInterval(intervalId);
   }, []);
 
   const loadDashboardData = async () => {
@@ -258,23 +266,52 @@ export default function Dashboard() {
   const generateRecentActivities = (milkEntries, settlements, payments, advances, clients, consumerSales, consumerPayments, consumers) => {
     const activities = [];
 
+    // Add recent clients (new client additions)
+    clients.slice(-10).forEach(client => {
+      activities.push({
+        id: `client-${client.id}`,
+        type: 'client',
+        title: 'New client added',
+        subtitle: `Client "${client.name}" registered`,
+        amount: '',
+        timestamp: new Date(client.createdAt || client.dateAdded || Date.now()),
+        icon: '👤',
+        color: 'bg-purple-100 text-purple-600'
+      });
+    });
+
     // Add recent milk entries
-    milkEntries.slice(-5).forEach(entry => {
+    milkEntries.slice(-10).forEach(entry => {
       const client = clients.find(c => c.id === entry.clientId);
       activities.push({
         id: `milk-${entry.id}`,
         type: 'milk_entry',
-        title: `Milk entry added`,
+        title: 'Milk entry recorded',
         subtitle: `${entry.litres}L ${entry.type} milk from ${client?.name || 'Unknown'}`,
         amount: `₹${entry.total}`,
-        time: formatTimeAgo(entry.createdAt),
+        timestamp: new Date(entry.createdAt),
         icon: '🥛',
         color: 'bg-blue-100 text-blue-600'
       });
     });
 
+    // Add recent payments
+    payments.slice(-10).forEach(payment => {
+      const client = clients.find(c => c.id === payment.clientId);
+      activities.push({
+        id: `payment-${payment.id}`,
+        type: 'payment',
+        title: 'Payment received',
+        subtitle: `Payment from ${client?.name || 'Unknown'}`,
+        amount: `₹${payment.amount}`,
+        timestamp: new Date(payment.createdAt || payment.date),
+        icon: '💰',
+        color: 'bg-green-100 text-green-600'
+      });
+    });
+
     // Add recent settlements
-    settlements.slice(-3).forEach(settlement => {
+    settlements.slice(-10).forEach(settlement => {
       const client = clients.find(c => c.id === settlement.clientId);
       activities.push({
         id: `settlement-${settlement.id}`,
@@ -282,46 +319,50 @@ export default function Dashboard() {
         title: `Settlement ${settlement.status}`,
         subtitle: `${settlement.startDate} to ${settlement.endDate} for ${client?.name || 'Unknown'}`,
         amount: `₹${settlement.totalAmount}`,
-        time: formatTimeAgo(settlement.createdAt),
-        icon: '💰',
+        timestamp: new Date(settlement.createdAt),
+        icon: '📋',
         color: settlement.status === 'completed' ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600'
       });
     });
 
     // Add recent consumer sales
-    consumerSales.slice(-3).forEach(sale => {
+    consumerSales.slice(-10).forEach(sale => {
       const consumer = consumers.find(c => c.id === sale.consumerId);
       activities.push({
         id: `consumer-sale-${sale.id}`,
         type: 'consumer_sale',
-        title: `Consumer sale recorded`,
+        title: 'Consumer sale recorded',
         subtitle: `${sale.litres}L milk sold to ${consumer?.name || 'Unknown'}`,
         amount: `₹${sale.total}`,
-        time: formatTimeAgo(sale.createdAt),
+        timestamp: new Date(sale.createdAt),
         icon: '🛒',
         color: 'bg-orange-100 text-orange-600'
       });
     });
 
     // Add recent consumer payments
-    consumerPayments.slice(-3).forEach(payment => {
+    consumerPayments.slice(-10).forEach(payment => {
       const consumer = consumers.find(c => c.id === payment.consumerId);
       activities.push({
         id: `consumer-payment-${payment.id}`,
         type: 'consumer_payment',
-        title: `Consumer payment received`,
+        title: 'Consumer payment received',
         subtitle: `Payment from ${consumer?.name || 'Unknown'}`,
         amount: `₹${payment.amount}`,
-        time: formatTimeAgo(payment.createdAt),
+        timestamp: new Date(payment.createdAt),
         icon: '💸',
         color: 'bg-green-100 text-green-600'
       });
     });
 
-    // Sort by time (most recent first) and take top 10
+    // Sort by timestamp (most recent first) and take top 5
     return activities
-      .sort((a, b) => new Date(b.time) - new Date(a.time))
-      .slice(0, 10);
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, 5)
+      .map(activity => ({
+        ...activity,
+        time: formatTimeAgo(activity.timestamp)
+      }));
   };
 
   const calculateTopClients = (monthEntries, clients) => {
@@ -378,12 +419,15 @@ export default function Dashboard() {
   const formatTimeAgo = (dateString) => {
     const now = new Date();
     const date = new Date(dateString);
-    const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
-
-    if (diffInHours < 1) return 'Just now';
-    if (diffInHours < 24) return `${diffInHours}h ago`;
+    const diffInMs = now - date;
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
     const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays < 7) return `${diffInDays}d ago`;
+
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes} minute${diffInMinutes === 1 ? '' : 's'} ago`;
+    if (diffInHours < 24) return `${diffInHours} hour${diffInHours === 1 ? '' : 's'} ago`;
+    if (diffInDays < 7) return `${diffInDays} day${diffInDays === 1 ? '' : 's'} ago`;
     return date.toLocaleDateString();
   };
 
