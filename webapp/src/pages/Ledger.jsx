@@ -103,7 +103,7 @@ Dairy Manager Pro`;
         ) : entries.length === 0 ? (
           <div className="p-8 text-center text-gray-500">No milk entries found</div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto w-full">
             <table className="w-full">
               <thead className="bg-gray-100 border-b">
                 <tr>

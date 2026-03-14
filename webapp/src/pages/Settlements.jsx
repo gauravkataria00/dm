@@ -148,7 +148,7 @@ export default function Settlements() {
         <div className="px-6 py-4 border-b border-gray-200">
           <h2 className="text-xl font-bold text-gray-800">Settlement History</h2>
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto w-full">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>

@@ -36,7 +36,7 @@ export default function MainLayout({ children }) {
   ];
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-gray-100 overflow-x-hidden">
       <aside
         className={`fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform transition-transform duration-300 z-40 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -70,7 +70,7 @@ export default function MainLayout({ children }) {
         />
       )}
 
-      <div className="flex-1 flex flex-col">
+      <div className="w-full flex-1 flex flex-col">
         <header className="bg-blue-600 text-white flex items-center justify-between px-4 py-3">
           <button
             className="md:hidden text-xl"
@@ -94,8 +94,8 @@ export default function MainLayout({ children }) {
           </button>
         </header>
 
-        <main className="flex-1 p-6 overflow-auto">
-          <div className="max-w-7xl mx-auto">{children}</div>
+        <main className="flex-1 w-full p-4 sm:p-6 overflow-auto">
+          <div className="w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">{children}</div>
         </main>
       </div>
     </div>

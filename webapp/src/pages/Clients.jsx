@@ -146,8 +146,8 @@ export default function Clients() {
         ) : filteredClients.length === 0 ? (
           <div className="p-8 text-center text-gray-500">No clients found</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="overflow-x-auto w-full">
+            <table className="min-w-full">
               <thead className="bg-gray-100 border-b">
                 <tr>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Name</th>
