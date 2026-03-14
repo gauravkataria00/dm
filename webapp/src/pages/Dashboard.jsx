@@ -45,6 +45,28 @@ export default function Dashboard() {
     }
   });
 
+  const getMilkRevenue = (entry) => {
+    const litres = parseFloat(entry?.litres) || 0;
+    const rate = parseFloat(entry?.rate) || 0;
+    return litres * rate;
+  };
+
+  const getConsumerRevenue = (sale) => {
+    const litres = parseFloat(sale?.litres) || 0;
+    const rate = parseFloat(sale?.rate) || 0;
+    return litres * rate;
+  };
+
+  const getTimestamp = (item) => {
+    const dateString = item?.createdAt || item?.date || item?.sale_date || 0;
+    return new Date(dateString).getTime() || 0;
+  };
+
+  const sortLatest = (items, dateGetter = getTimestamp) =>
+    [...items]
+      .filter(Boolean)
+      .sort((a, b) => dateGetter(b) - dateGetter(a));
+
   useEffect(() => {
     loadDashboardData();
     
@@ -175,16 +197,16 @@ export default function Dashboard() {
         ).length,
         totalMilkToday: todayEntries.reduce((sum, entry) => sum + (entry.litres || 0), 0),
         totalMilkThisMonth: thisMonthEntries.reduce((sum, entry) => sum + (entry.litres || 0), 0),
-        totalRevenueToday: todayEntries.reduce((sum, entry) => sum + (entry.total || 0), 0),
-        totalRevenueThisMonth: thisMonthEntries.reduce((sum, entry) => sum + (entry.total || 0), 0),
+        totalRevenueToday: todayEntries.reduce((sum, entry) => sum + getMilkRevenue(entry), 0),
+        totalRevenueThisMonth: thisMonthEntries.reduce((sum, entry) => sum + getMilkRevenue(entry), 0),
         pendingSettlements: settlements.filter(s => s.status === 'pending').length,
         activeAdvances: advances.filter(a => a.status === 'active').length,
         totalOutstanding: 0, // Will calculate below
         totalConsumers: consumers.length,
         totalConsumerSalesToday: todayConsumerSales.reduce((sum, sale) => sum + (sale.litres || 0), 0),
         totalConsumerSalesThisMonth: thisMonthConsumerSales.reduce((sum, sale) => sum + (sale.litres || 0), 0),
-        totalConsumerRevenueToday: todayConsumerSales.reduce((sum, sale) => sum + (sale.total || 0), 0),
-        totalConsumerRevenueThisMonth: thisMonthConsumerSales.reduce((sum, sale) => sum + (sale.total || 0), 0),
+        totalConsumerRevenueToday: todayConsumerSales.reduce((sum, sale) => sum + getConsumerRevenue(sale), 0),
+        totalConsumerRevenueThisMonth: thisMonthConsumerSales.reduce((sum, sale) => sum + getConsumerRevenue(sale), 0),
         currentInventory: todayInventory.cow || 0
       };
 
@@ -266,8 +288,15 @@ export default function Dashboard() {
   const generateRecentActivities = (milkEntries, settlements, payments, advances, clients, consumerSales, consumerPayments, consumers) => {
     const activities = [];
 
+    const latestClients = sortLatest(clients).slice(0, 10);
+    const latestMilkEntries = sortLatest(milkEntries).slice(0, 10);
+    const latestPayments = sortLatest(payments, (p) => new Date(p.createdAt || p.date || 0).getTime()).slice(0, 10);
+    const latestSettlements = sortLatest(settlements).slice(0, 10);
+    const latestConsumerSales = sortLatest(consumerSales, (s) => new Date(s.createdAt || s.sale_date || 0).getTime()).slice(0, 10);
+    const latestConsumerPayments = sortLatest(consumerPayments).slice(0, 10);
+
     // Add recent clients (new client additions)
-    clients.slice(-10).forEach(client => {
+    latestClients.forEach(client => {
       activities.push({
         id: `client-${client.id}`,
         type: 'client',
@@ -281,75 +310,75 @@ export default function Dashboard() {
     });
 
     // Add recent milk entries
-    milkEntries.slice(-10).forEach(entry => {
+    latestMilkEntries.forEach(entry => {
       const client = clients.find(c => c.id === entry.clientId);
       activities.push({
         id: `milk-${entry.id}`,
         type: 'milk_entry',
         title: 'Milk entry recorded',
         subtitle: `${entry.litres}L ${entry.type} milk from ${client?.name || 'Unknown'}`,
-        amount: `₹${entry.total}`,
-        timestamp: new Date(entry.createdAt),
+        amount: `₹${getMilkRevenue(entry).toFixed(0)}`,
+        timestamp: new Date(getTimestamp(entry)),
         icon: '🥛',
         color: 'bg-blue-100 text-blue-600'
       });
     });
 
     // Add recent payments
-    payments.slice(-10).forEach(payment => {
+    latestPayments.forEach(payment => {
       const client = clients.find(c => c.id === payment.clientId);
       activities.push({
         id: `payment-${payment.id}`,
         type: 'payment',
         title: 'Payment received',
         subtitle: `Payment from ${client?.name || 'Unknown'}`,
-        amount: `₹${payment.amount}`,
-        timestamp: new Date(payment.createdAt || payment.date),
+        amount: `₹${parseFloat(payment.amount || 0).toFixed(0)}`,
+        timestamp: new Date(getTimestamp(payment)),
         icon: '💰',
         color: 'bg-green-100 text-green-600'
       });
     });
 
     // Add recent settlements
-    settlements.slice(-10).forEach(settlement => {
+    latestSettlements.forEach(settlement => {
       const client = clients.find(c => c.id === settlement.clientId);
       activities.push({
         id: `settlement-${settlement.id}`,
         type: 'settlement',
         title: `Settlement ${settlement.status}`,
         subtitle: `${settlement.startDate} to ${settlement.endDate} for ${client?.name || 'Unknown'}`,
-        amount: `₹${settlement.totalAmount}`,
-        timestamp: new Date(settlement.createdAt),
+        amount: `₹${parseFloat(settlement.totalAmount || 0).toFixed(0)}`,
+        timestamp: new Date(getTimestamp(settlement)),
         icon: '📋',
         color: settlement.status === 'completed' ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600'
       });
     });
 
     // Add recent consumer sales
-    consumerSales.slice(-10).forEach(sale => {
+    latestConsumerSales.forEach(sale => {
       const consumer = consumers.find(c => c.id === sale.consumerId);
       activities.push({
         id: `consumer-sale-${sale.id}`,
         type: 'consumer_sale',
         title: 'Consumer sale recorded',
         subtitle: `${sale.litres}L milk sold to ${consumer?.name || 'Unknown'}`,
-        amount: `₹${sale.total}`,
-        timestamp: new Date(sale.createdAt),
+        amount: `₹${getConsumerRevenue(sale).toFixed(0)}`,
+        timestamp: new Date(getTimestamp(sale)),
         icon: '🛒',
         color: 'bg-orange-100 text-orange-600'
       });
     });
 
     // Add recent consumer payments
-    consumerPayments.slice(-10).forEach(payment => {
+    latestConsumerPayments.forEach(payment => {
       const consumer = consumers.find(c => c.id === payment.consumerId);
       activities.push({
         id: `consumer-payment-${payment.id}`,
         type: 'consumer_payment',
         title: 'Consumer payment received',
         subtitle: `Payment from ${consumer?.name || 'Unknown'}`,
-        amount: `₹${payment.amount}`,
-        timestamp: new Date(payment.createdAt),
+        amount: `₹${parseFloat(payment.amount || 0).toFixed(0)}`,
+        timestamp: new Date(getTimestamp(payment)),
         icon: '💸',
         color: 'bg-green-100 text-green-600'
       });
@@ -372,7 +401,7 @@ export default function Dashboard() {
       if (!clientRevenue[entry.clientId]) {
         clientRevenue[entry.clientId] = 0;
       }
-      clientRevenue[entry.clientId] += entry.total;
+      clientRevenue[entry.clientId] += getMilkRevenue(entry);
     });
 
     return Object.entries(clientRevenue)
@@ -406,7 +435,7 @@ export default function Dashboard() {
         entry.createdAt.startsWith(date)
       );
       const totalLitres = dayEntries.reduce((sum, entry) => sum + entry.litres, 0);
-      const totalRevenue = dayEntries.reduce((sum, entry) => sum + entry.total, 0);
+      const totalRevenue = dayEntries.reduce((sum, entry) => sum + getMilkRevenue(entry), 0);
 
       return {
         date: new Date(date).toLocaleDateString('en-IN', { weekday: 'short' }),
@@ -473,7 +502,7 @@ export default function Dashboard() {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         <MetricCard
           title="Total Clients"
           value={stats.totalClients}
@@ -509,7 +538,7 @@ export default function Dashboard() {
       </div>
 
       {/* Consumer Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         <MetricCard
           title="Total Consumers"
           value={stats.totalConsumers}
@@ -721,19 +750,22 @@ export default function Dashboard() {
 
 // Reusable Components
 const MetricCard = ({ title, value, subtitle, icon, color, trend }) => (
-  <div className={`bg-gradient-to-br ${color} text-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1`}>
-    <div className="flex justify-between items-start mb-6">
-      <div className="flex-1">
-        <p className="text-white/80 text-sm font-medium mb-2">{title}</p>
-        <p className="text-3xl font-bold leading-tight">{value}</p>
+  <div className="bg-white rounded-xl shadow-md p-6 relative flex flex-col justify-between">
+    <div className="flex justify-between items-start">
+      <h3 className="text-sm font-medium text-gray-500">
+        {title}
+      </h3>
+      <div className="text-3xl opacity-20">
+        {icon}
       </div>
-      <div className="text-5xl opacity-80 ml-4">{icon}</div>
     </div>
-    <div className="flex justify-between items-center">
-      <p className="text-white/70 text-sm flex-1">{subtitle}</p>
-      <span className="bg-white/20 px-3 py-1 rounded-full text-xs font-medium ml-4">
-        {trend}
-      </span>
+    <div className="mt-4">
+      <h2 className="text-3xl font-bold text-gray-900">
+        {value}
+      </h2>
+      <p className="text-sm text-gray-500 mt-1">
+        {subtitle}
+      </p>
     </div>
   </div>
 );

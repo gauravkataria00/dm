@@ -13,25 +13,28 @@ import Consumers from "../pages/Consumers";
 import ConsumerSales from "../pages/ConsumerSales";
 import ConsumerPayments from "../pages/ConsumerPayments";
 import Inventory from "../pages/Inventory";
+import Login from "../pages/Login";
+import ProtectedRoute from "../components/ProtectedRoute";
 
 export default function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/clients" element={<Clients />} />
-        <Route path="/add-milk" element={<AddMilk />} />
-        <Route path="/ledger" element={<Ledger />} />
-        <Route path="/reports" element={<Reports />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/settlements" element={<Settlements />} />
-        <Route path="/payments" element={<Payments />} />
-        <Route path="/advances" element={<Advances />} />
-        <Route path="/consumers" element={<Consumers />} />
-        <Route path="/consumer-sales" element={<ConsumerSales />} />
-        <Route path="/consumer-payments" element={<ConsumerPayments />} />
-        <Route path="/inventory" element={<Inventory />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
+        <Route path="/add-milk" element={<ProtectedRoute><AddMilk /></ProtectedRoute>} />
+        <Route path="/ledger" element={<ProtectedRoute><Ledger /></ProtectedRoute>} />
+        <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        <Route path="/settlements" element={<ProtectedRoute><Settlements /></ProtectedRoute>} />
+        <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
+        <Route path="/advances" element={<ProtectedRoute><Advances /></ProtectedRoute>} />
+        <Route path="/consumers" element={<ProtectedRoute><Consumers /></ProtectedRoute>} />
+        <Route path="/consumer-sales" element={<ProtectedRoute><ConsumerSales /></ProtectedRoute>} />
+        <Route path="/consumer-payments" element={<ProtectedRoute><ConsumerPayments /></ProtectedRoute>} />
+        <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );

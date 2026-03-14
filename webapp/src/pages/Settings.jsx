@@ -1,6 +1,23 @@
 import MainLayout from "../components/layout/MainLayout";
+import { useState } from "react";
+import { useToast } from "../context/ToastContext";
 
 export default function Settings() {
+  const getStoredRate = (key, fallback) => {
+    const value = parseFloat(localStorage.getItem(key));
+    return Number.isNaN(value) ? fallback : value;
+  };
+
+  const [cowRate, setCowRate] = useState(() => getStoredRate("cowRate", 45));
+  const [buffaloRate, setBuffaloRate] = useState(() => getStoredRate("buffaloRate", 55));
+  const { push } = useToast();
+
+  const saveSettings = () => {
+    localStorage.setItem("cowRate", cowRate);
+    localStorage.setItem("buffaloRate", buffaloRate);
+    push("Settings saved", "success");
+  };
+
   return (
     <MainLayout>
       <div className="mb-8">
@@ -33,7 +50,8 @@ export default function Settings() {
               <input
                 type="number"
                 className="w-full p-2 border border-gray-300 rounded-md"
-                defaultValue="45"
+                value={cowRate}
+                onChange={(e) => setCowRate(Number(e.target.value))}
               />
             </div>
             <div>
@@ -43,7 +61,8 @@ export default function Settings() {
               <input
                 type="number"
                 className="w-full p-2 border border-gray-300 rounded-md"
-                defaultValue="55"
+                value={buffaloRate}
+                onChange={(e) => setBuffaloRate(Number(e.target.value))}
               />
             </div>
           </div>
@@ -76,7 +95,10 @@ export default function Settings() {
         </div>
 
         <div className="flex justify-end">
-          <button className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition">
+          <button
+            onClick={saveSettings}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition"
+          >
             Save Settings
           </button>
         </div>

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import MainLayout from "../components/layout/MainLayout";
 import { getMilkEntries, getClients } from "../services/api";
 import { useToast } from "../context/ToastContext";
+import { FaWhatsapp } from "react-icons/fa";
 
 export default function Ledger() {
   const [entries, setEntries] = useState([]);
@@ -31,6 +32,22 @@ export default function Ledger() {
   const totalLitres = entries.reduce((sum, e) => sum + e.litres, 0);
   const totalAmount = entries.reduce((sum, e) => sum + e.total, 0);
 
+  const formatFatValue = (fat) => {
+    const value = Number(fat);
+    if (!value || value <= 0 || value > 20) {
+      return "-";
+    }
+    return value.toFixed(2) + "%";
+  };
+
+  const formatSnfValue = (snf) => {
+    const value = Number(snf);
+    if (!value || value <= 0 || value > 15) {
+      return "-";
+    }
+    return value.toFixed(2) + "%";
+  };
+
   const handleSendWhatsApp = (entry) => {
     const client = clients.find(c => c.id === entry.clientId);
     if (!client || !client.phone) {
@@ -44,7 +61,7 @@ Client: ${entry.clientName}
 Date: ${new Date(entry.createdAt).toLocaleDateString()}
 
 Milk: ${entry.litres} L
-Fat: ${entry.fat}
+Fat: ${entry.fat || "-"}
 Rate: ₹${entry.rate}
 
 Total: ₹${entry.total}
@@ -53,7 +70,8 @@ Thank you!
 Dairy Manager Pro`;
 
     const encodedMessage = encodeURIComponent(message);
-    const url = `https://wa.me/${client.phone}?text=${encodedMessage}`;
+    const phone = client.phone.replace(/[^0-9]/g, "");
+    const url = `https://wa.me/${phone}?text=${encodedMessage}`;
     window.open(url, "_blank");
   };
 
@@ -106,17 +124,18 @@ Dairy Manager Pro`;
                     <td className="px-6 py-4 font-medium text-gray-800">{entry.clientName}</td>
                     <td className="px-6 py-4 text-gray-600 capitalize">{entry.type}</td>
                     <td className="px-6 py-4 text-gray-600">{entry.litres} L</td>
-                    <td className="px-6 py-4 text-gray-600">{entry.fat}%</td>
-                    <td className="px-6 py-4 text-gray-600">{entry.snf}%</td>
+                    <td className="px-6 py-4 text-gray-600">{formatFatValue(entry.fat)}</td>
+                    <td className="px-6 py-4 text-gray-600">{formatSnfValue(entry.snf)}</td>
                     <td className="px-6 py-4 text-gray-600">₹{entry.rate.toFixed(2)}</td>
                     <td className="px-6 py-4 font-semibold text-green-600">₹{entry.total.toFixed(2)}</td>
                     <td className="px-6 py-4 text-sm text-gray-500">{new Date(entry.createdAt).toLocaleDateString()}</td>
                     <td className="px-6 py-4">
                       <button
                         onClick={() => handleSendWhatsApp(entry)}
-                        className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
+                        className="bg-green-600 text-white px-3 py-2 rounded text-sm hover:bg-green-700 flex items-center gap-2 transition-colors"
                       >
-                        Send WhatsApp
+                        <FaWhatsapp className="w-4 h-4" />
+                        <span className="hidden sm:inline">Send</span>
                       </button>
                     </td>
                   </tr>

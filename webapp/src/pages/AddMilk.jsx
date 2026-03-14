@@ -31,8 +31,10 @@ export default function AddMilk() {
     loadClients();
   }, [push]);
 
-  const rate = fat ? (type === "cow" ? fat * 10 : fat * 12) : 0;
-  const total = litres && rate ? litres * rate : 0;
+  const cowRate = parseFloat(localStorage.getItem("cowRate")) || 45;
+  const buffaloRate = parseFloat(localStorage.getItem("buffaloRate")) || 55;
+  const rate = type === "cow" ? cowRate : buffaloRate;
+  const total = litres && rate ? Number(litres) * rate : 0;
 
   const handleSave = async () => {
     if (!selectedClientId) {

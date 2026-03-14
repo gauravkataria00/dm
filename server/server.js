@@ -185,6 +185,23 @@ const db = new sqlite3.Database(dbPath, (err) => {
 // Make db globally accessible
 global.db = db;
 
+// Auth routes
+app.post("/api/auth/login", (req, res) => {
+  const { email, password } = req.body;
+
+  if (email === "Himanshu@admin.com" && password === "no password") {
+    return res.json({
+      success: true,
+      token: "admin-demo-token"
+    });
+  }
+
+  return res.status(401).json({
+    success: false,
+    message: "Invalid email or password"
+  });
+});
+
 app.use("/api/clients", clientRoutes);
 console.log("Mounting /api/milk routes");
 app.use("/api/milk", milkRoutes);

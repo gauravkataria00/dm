@@ -1,9 +1,11 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+import { API_BASE_URL } from "./config";
+
+const API_BASE_URL_WITH_API = `${API_BASE_URL}/api`;
 
 // Get all clients
 export const getClients = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/clients`);
+    const response = await fetch(`${API_BASE_URL_WITH_API}/clients`);
     if (!response.ok) throw new Error("Failed to fetch clients");
     return await response.json();
   } catch (error) {
@@ -15,7 +17,7 @@ export const getClients = async () => {
 // Get single client by ID
 export const getClientById = async (id) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/clients/${id}`);
+    const response = await fetch(`${API_BASE_URL_WITH_API}/clients/${id}`);
     if (!response.ok) throw new Error("Failed to fetch client");
     return await response.json();
   } catch (error) {
@@ -27,7 +29,7 @@ export const getClientById = async (id) => {
 // Create new client
 export const createClient = async (clientData) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/clients`, {
+    const response = await fetch(`${API_BASE_URL_WITH_API}/clients`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(clientData),
@@ -43,7 +45,7 @@ export const createClient = async (clientData) => {
 // Update client
 export const updateClient = async (id, clientData) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/clients/${id}`, {
+    const response = await fetch(`${API_BASE_URL_WITH_API}/clients/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(clientData),
@@ -59,7 +61,7 @@ export const updateClient = async (id, clientData) => {
 // Delete client
 export const deleteClient = async (id) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/clients/${id}`, {
+    const response = await fetch(`${API_BASE_URL_WITH_API}/clients/${id}`, {
       method: "DELETE",
     });
     if (!response.ok) throw new Error("Failed to delete client");
@@ -73,7 +75,7 @@ export const deleteClient = async (id) => {
 // Milk entries
 export const getMilkEntries = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/milk`);
+    const response = await fetch(`${API_BASE_URL_WITH_API}/milk`);
     if (!response.ok) throw new Error("Failed to fetch milk entries");
     return await response.json();
   } catch (error) {
@@ -84,7 +86,7 @@ export const getMilkEntries = async () => {
 
 export const createMilkEntry = async (entryData) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/milk`, {
+    const response = await fetch(`${API_BASE_URL_WITH_API}/milk`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(entryData),
@@ -100,7 +102,7 @@ export const createMilkEntry = async (entryData) => {
 // Settlements
 export const getSettlements = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/settlements`);
+    const response = await fetch(`${API_BASE_URL_WITH_API}/settlements`);
     if (!response.ok) throw new Error("Failed to fetch settlements");
     return await response.json();
   } catch (error) {
@@ -111,7 +113,7 @@ export const getSettlements = async () => {
 
 export const getClientSettlements = async (clientId) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/settlements/client/${clientId}`);
+    const response = await fetch(`${API_BASE_URL_WITH_API}/settlements/client/${clientId}`);
     if (!response.ok) throw new Error("Failed to fetch client settlements");
     return await response.json();
   } catch (error) {
@@ -122,7 +124,7 @@ export const getClientSettlements = async (clientId) => {
 
 export const createSettlement = async (settlementData) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/settlements`, {
+    const response = await fetch(`${API_BASE_URL_WITH_API}/settlements`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(settlementData),
@@ -137,7 +139,7 @@ export const createSettlement = async (settlementData) => {
 
 export const updateSettlementStatus = async (id, status) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/settlements/${id}`, {
+    const response = await fetch(`${API_BASE_URL_WITH_API}/settlements/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
@@ -153,7 +155,7 @@ export const updateSettlementStatus = async (id, status) => {
 // Payments
 export const getPayments = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/payments`);
+    const response = await fetch(`${API_BASE_URL_WITH_API}/payments`);
     if (!response.ok) throw new Error("Failed to fetch payments");
     return await response.json();
   } catch (error) {
@@ -164,7 +166,7 @@ export const getPayments = async () => {
 
 export const getClientPayments = async (clientId) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/payments/client/${clientId}`);
+    const response = await fetch(`${API_BASE_URL_WITH_API}/payments/client/${clientId}`);
     if (!response.ok) throw new Error("Failed to fetch client payments");
     return await response.json();
   } catch (error) {
@@ -175,7 +177,7 @@ export const getClientPayments = async (clientId) => {
 
 export const createPayment = async (paymentData) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/payments`, {
+    const response = await fetch(`${API_BASE_URL_WITH_API}/payments`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(paymentData),
@@ -190,7 +192,7 @@ export const createPayment = async (paymentData) => {
 
 export const getClientPaymentSummary = async (clientId) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/payments/summary/${clientId}`);
+    const response = await fetch(`${API_BASE_URL_WITH_API}/payments/summary/${clientId}`);
     if (!response.ok) throw new Error("Failed to fetch payment summary");
     return await response.json();
   } catch (error) {
@@ -202,7 +204,7 @@ export const getClientPaymentSummary = async (clientId) => {
 // Advances
 export const getAdvances = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/advances`);
+    const response = await fetch(`${API_BASE_URL_WITH_API}/advances`);
     if (!response.ok) throw new Error("Failed to fetch advances");
     return await response.json();
   } catch (error) {
@@ -213,7 +215,7 @@ export const getAdvances = async () => {
 
 export const getClientAdvances = async (clientId) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/advances/client/${clientId}`);
+    const response = await fetch(`${API_BASE_URL_WITH_API}/advances/client/${clientId}`);
     if (!response.ok) throw new Error("Failed to fetch client advances");
     return await response.json();
   } catch (error) {
@@ -224,7 +226,7 @@ export const getClientAdvances = async (clientId) => {
 
 export const createAdvance = async (advanceData) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/advances`, {
+    const response = await fetch(`${API_BASE_URL_WITH_API}/advances`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(advanceData),
@@ -239,7 +241,7 @@ export const createAdvance = async (advanceData) => {
 
 export const updateAdvanceStatus = async (id, status) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/advances/${id}`, {
+    const response = await fetch(`${API_BASE_URL_WITH_API}/advances/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
@@ -255,7 +257,7 @@ export const updateAdvanceStatus = async (id, status) => {
 // Consumers
 export const getConsumers = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/consumers`);
+    const response = await fetch(`${API_BASE_URL_WITH_API}/consumers`);
     if (!response.ok) throw new Error("Failed to fetch consumers");
     return await response.json();
   } catch (error) {
@@ -266,7 +268,7 @@ export const getConsumers = async () => {
 
 export const getConsumerById = async (id) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/consumers/${id}`);
+    const response = await fetch(`${API_BASE_URL_WITH_API}/consumers/${id}`);
     if (!response.ok) throw new Error("Failed to fetch consumer");
     return await response.json();
   } catch (error) {
@@ -277,7 +279,7 @@ export const getConsumerById = async (id) => {
 
 export const createConsumer = async (consumerData) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/consumers`, {
+    const response = await fetch(`${API_BASE_URL_WITH_API}/consumers`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(consumerData),
@@ -292,7 +294,7 @@ export const createConsumer = async (consumerData) => {
 
 export const updateConsumer = async (id, consumerData) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/consumers/${id}`, {
+    const response = await fetch(`${API_BASE_URL_WITH_API}/consumers/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(consumerData),
@@ -307,7 +309,7 @@ export const updateConsumer = async (id, consumerData) => {
 
 export const deleteConsumer = async (id) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/consumers/${id}`, {
+    const response = await fetch(`${API_BASE_URL_WITH_API}/consumers/${id}`, {
       method: "DELETE",
     });
     if (!response.ok) throw new Error("Failed to delete consumer");
@@ -320,7 +322,7 @@ export const deleteConsumer = async (id) => {
 
 export const getConsumerSummary = async (id) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/consumers/${id}/summary`);
+    const response = await fetch(`${API_BASE_URL_WITH_API}/consumers/${id}/summary`);
     if (!response.ok) throw new Error("Failed to fetch consumer summary");
     return await response.json();
   } catch (error) {
@@ -332,7 +334,7 @@ export const getConsumerSummary = async (id) => {
 // Consumer Sales
 export const getConsumerSales = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/consumer-sales`);
+    const response = await fetch(`${API_BASE_URL_WITH_API}/consumer-sales`);
     if (!response.ok) throw new Error("Failed to fetch consumer sales");
     return await response.json();
   } catch (error) {
@@ -343,7 +345,7 @@ export const getConsumerSales = async () => {
 
 export const getConsumerSalesByConsumer = async (consumerId) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/consumer-sales/consumer/${consumerId}`);
+    const response = await fetch(`${API_BASE_URL_WITH_API}/consumer-sales/consumer/${consumerId}`);
     if (!response.ok) throw new Error("Failed to fetch consumer sales");
     return await response.json();
   } catch (error) {
@@ -354,7 +356,7 @@ export const getConsumerSalesByConsumer = async (consumerId) => {
 
 export const getTodayConsumerSales = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/consumer-sales/today`);
+    const response = await fetch(`${API_BASE_URL_WITH_API}/consumer-sales/today`);
     if (!response.ok) throw new Error("Failed to fetch today's consumer sales");
     return await response.json();
   } catch (error) {
@@ -365,7 +367,7 @@ export const getTodayConsumerSales = async () => {
 
 export const createConsumerSale = async (saleData) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/consumer-sales`, {
+    const response = await fetch(`${API_BASE_URL_WITH_API}/consumer-sales`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(saleData),
@@ -380,7 +382,7 @@ export const createConsumerSale = async (saleData) => {
 
 export const updateConsumerSaleStatus = async (id, payment_status) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/consumer-sales/${id}/status`, {
+    const response = await fetch(`${API_BASE_URL_WITH_API}/consumer-sales/${id}/status`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ payment_status }),
@@ -395,7 +397,7 @@ export const updateConsumerSaleStatus = async (id, payment_status) => {
 
 export const getConsumerSalesSummary = async (startDate, endDate) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/consumer-sales/summary/range?startDate=${startDate}&endDate=${endDate}`);
+    const response = await fetch(`${API_BASE_URL_WITH_API}/consumer-sales/summary/range?startDate=${startDate}&endDate=${endDate}`);
     if (!response.ok) throw new Error("Failed to fetch sales summary");
     return await response.json();
   } catch (error) {
@@ -407,7 +409,7 @@ export const getConsumerSalesSummary = async (startDate, endDate) => {
 // Consumer Payments
 export const getConsumerPayments = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/consumer-payments`);
+    const response = await fetch(`${API_BASE_URL_WITH_API}/consumer-payments`);
     if (!response.ok) throw new Error("Failed to fetch consumer payments");
     return await response.json();
   } catch (error) {
@@ -418,7 +420,7 @@ export const getConsumerPayments = async () => {
 
 export const getConsumerPaymentsByConsumer = async (consumerId) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/consumer-payments/consumer/${consumerId}`);
+    const response = await fetch(`${API_BASE_URL_WITH_API}/consumer-payments/consumer/${consumerId}`);
     if (!response.ok) throw new Error("Failed to fetch consumer payments");
     return await response.json();
   } catch (error) {
@@ -429,7 +431,7 @@ export const getConsumerPaymentsByConsumer = async (consumerId) => {
 
 export const createConsumerPayment = async (paymentData) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/consumer-payments`, {
+    const response = await fetch(`${API_BASE_URL_WITH_API}/consumer-payments`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(paymentData),
@@ -444,7 +446,7 @@ export const createConsumerPayment = async (paymentData) => {
 
 export const getConsumerPaymentSummary = async (consumerId) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/consumer-payments/summary/${consumerId}`);
+    const response = await fetch(`${API_BASE_URL_WITH_API}/consumer-payments/summary/${consumerId}`);
     if (!response.ok) throw new Error("Failed to fetch payment summary");
     return await response.json();
   } catch (error) {
@@ -456,7 +458,7 @@ export const getConsumerPaymentSummary = async (consumerId) => {
 // Inventory
 export const getInventory = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/inventory`);
+    const response = await fetch(`${API_BASE_URL_WITH_API}/inventory`);
     if (!response.ok) throw new Error("Failed to fetch inventory");
     return await response.json();
   } catch (error) {
@@ -467,7 +469,7 @@ export const getInventory = async () => {
 
 export const getTodayInventory = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/inventory/today`);
+    const response = await fetch(`${API_BASE_URL_WITH_API}/inventory/today`);
     if (!response.ok) throw new Error("Failed to fetch today's inventory");
     return await response.json();
   } catch (error) {
@@ -478,7 +480,7 @@ export const getTodayInventory = async () => {
 
 export const createInventoryRecord = async (inventoryData) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/inventory`, {
+    const response = await fetch(`${API_BASE_URL_WITH_API}/inventory`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(inventoryData),
@@ -493,7 +495,7 @@ export const createInventoryRecord = async (inventoryData) => {
 
 export const updateInventoryRecord = async (id, inventoryData) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/inventory/${id}`, {
+    const response = await fetch(`${API_BASE_URL_WITH_API}/inventory/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(inventoryData),
@@ -508,7 +510,7 @@ export const updateInventoryRecord = async (id, inventoryData) => {
 
 export const calculateTodayInventory = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/inventory/calculate/today`, {
+    const response = await fetch(`${API_BASE_URL_WITH_API}/inventory/calculate/today`, {
       method: "POST",
     });
     if (!response.ok) throw new Error("Failed to calculate inventory");
