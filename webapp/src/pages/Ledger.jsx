@@ -1,30 +1,61 @@
 import { useState, useEffect } from "react";
 import MainLayout from "../components/layout/MainLayout";
-import { getMilkEntries } from "../services/api";
+import { getMilkEntries, getClients } from "../services/api";
 import { useToast } from "../context/ToastContext";
 
 export default function Ledger() {
   const [entries, setEntries] = useState([]);
+  const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const { push } = useToast();
 
   useEffect(() => {
-    const loadEntries = async () => {
+    const loadData = async () => {
       try {
-        const data = await getMilkEntries();
-        setEntries(data);
+        const [entriesData, clientsData] = await Promise.all([
+          getMilkEntries(),
+          getClients()
+        ]);
+        setEntries(entriesData);
+        setClients(clientsData);
       } catch {
-        push("Failed to load milk entries", "error");
+        push("Failed to load data", "error");
       } finally {
         setLoading(false);
       }
     };
 
-    loadEntries();
+    loadData();
   }, [push]);
 
   const totalLitres = entries.reduce((sum, e) => sum + e.litres, 0);
   const totalAmount = entries.reduce((sum, e) => sum + e.total, 0);
+
+  const handleSendWhatsApp = (entry) => {
+    const client = clients.find(c => c.id === entry.clientId);
+    if (!client || !client.phone) {
+      push("Client phone number not found", "error");
+      return;
+    }
+
+    const message = `🥛 Milk Entry Update
+
+Client: ${entry.clientName}
+Date: ${new Date(entry.createdAt).toLocaleDateString()}
+
+Milk: ${entry.litres} L
+Fat: ${entry.fat}
+Rate: ₹${entry.rate}
+
+Total: ₹${entry.total}
+
+Thank you!
+Dairy Manager Pro`;
+
+    const encodedMessage = encodeURIComponent(message);
+    const url = `https://wa.me/${client.phone}?text=${encodedMessage}`;
+    window.open(url, "_blank");
+  };
 
   return (
     <MainLayout>
@@ -66,6 +97,7 @@ export default function Ledger() {
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Rate</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Total</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Date</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -79,6 +111,14 @@ export default function Ledger() {
                     <td className="px-6 py-4 text-gray-600">₹{entry.rate.toFixed(2)}</td>
                     <td className="px-6 py-4 font-semibold text-green-600">₹{entry.total.toFixed(2)}</td>
                     <td className="px-6 py-4 text-sm text-gray-500">{new Date(entry.createdAt).toLocaleDateString()}</td>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => handleSendWhatsApp(entry)}
+                        className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
+                      >
+                        Send WhatsApp
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
