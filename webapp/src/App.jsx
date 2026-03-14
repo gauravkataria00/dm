@@ -1,12 +1,22 @@
-import AppRoutes from "./routes/AppRoutes";
-import { ToastProvider } from "./context/ToastContext";
+// import AppRoutes from "./routes/AppRoutes";
+// import { ToastProvider } from "./context/ToastContext";
+
+// function App() {
+//   return (
+//     <ToastProvider>
+//       <AppRoutes />
+//     </ToastProvider>
+//   );
+// }
+
+// export default App;
 
 function App() {
   return (
-    <ToastProvider>
-      <AppRoutes />
-    </ToastProvider>
-  );
+    <div style={{color:"black",fontSize:"30px"}}>
+      TEST APP WORKING
+    </div>
+  )
 }
 
-export default App;
+export default App
