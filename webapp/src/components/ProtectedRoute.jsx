@@ -1,16 +1,9 @@
-import { useEffect } from "react";
+import { Navigate } from "react-router-dom";
 
 export default function ProtectedRoute({ children }) {
-  useEffect(() => {
-    const token = localStorage.getItem("adminToken");
-    if (!token) {
-      window.location.href = "/login";
-    }
-  }, []);
-
   const token = localStorage.getItem("adminToken");
   if (!token) {
-    return null;
+    return <Navigate to="/login" replace />;
   }
 
   return children;
