@@ -1,7 +1,4 @@
 {
-  "rootDirectory": "webapp",
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
   "routes": [
     {
       "src": "/(.*)",
