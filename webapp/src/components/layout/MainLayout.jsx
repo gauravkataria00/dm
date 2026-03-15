@@ -36,13 +36,13 @@ export default function MainLayout({ children }) {
   ];
 
   return (
-    <div className="flex min-h-screen bg-gray-100 overflow-x-hidden">
+    <div className="flex min-h-screen bg-gray-50 overflow-x-hidden">
       <aside
         className={`fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform transition-transform duration-300 z-40 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         } md:translate-x-0 md:static md:shadow-none`}
       >
-        <nav className="p-6 space-y-1">
+        <nav className="p-6 space-y-2">
           {navItems.map((item) => (
             <Link
               key={item.path}
@@ -50,7 +50,7 @@ export default function MainLayout({ children }) {
               onClick={() => {
                 if (window.innerWidth < 768) setSidebarOpen(false);
               }}
-              className={`block px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
+              className={`block px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
                 location.pathname === item.path
                   ? "bg-blue-600 text-white shadow-md"
                   : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
@@ -71,15 +71,15 @@ export default function MainLayout({ children }) {
       )}
 
       <div className="w-full flex-1 flex flex-col">
-        <header className="bg-blue-600 text-white flex items-center justify-between px-4 py-3">
+        <header className="bg-white border-b border-gray-200 text-gray-800 flex items-center justify-between px-4 py-3 shadow-sm">
           <button
-            className="md:hidden text-xl"
+            className="md:hidden text-2xl text-gray-600"
             onClick={() => setSidebarOpen(true)}
           >
             ☰
           </button>
 
-          <h1 className="font-semibold text-lg">
+          <h1 className="font-semibold text-lg sm:text-xl">
             🐄 Dairy Manager Pro
           </h1>
 
@@ -88,7 +88,7 @@ export default function MainLayout({ children }) {
               localStorage.removeItem("adminToken");
               window.location.href = "/login";
             }}
-            className="text-sm hover:bg-blue-700 px-3 py-1 rounded transition"
+            className="text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-lg transition"
           >
             Logout
           </button>

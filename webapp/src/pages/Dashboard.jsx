@@ -477,7 +477,7 @@ export default function Dashboard() {
 
   return (
     <MainLayout>
-      <div className="px-6 lg:px-8 py-6">
+      <div className="px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
         <div className="mb-10">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -750,17 +750,17 @@ export default function Dashboard() {
 
 // Reusable Components
 const MetricCard = ({ title, value, subtitle, icon, color, trend }) => (
-  <div className="bg-white rounded-xl shadow-md p-6 relative flex flex-col justify-between">
+  <div className="bg-white rounded-2xl shadow-sm ring-1 ring-black/10 hover:shadow-lg hover:ring-blue-200 transition-shadow duration-200 p-4 sm:p-6 relative flex flex-col justify-between">
     <div className="flex justify-between items-start">
-      <h3 className="text-sm font-medium text-gray-500">
+      <h3 className="text-sm font-semibold text-gray-600">
         {title}
       </h3>
-      <div className="text-3xl opacity-20">
+      <div className="text-2xl sm:text-3xl opacity-25">
         {icon}
       </div>
     </div>
     <div className="mt-4">
-      <h2 className="text-3xl font-bold text-gray-900">
+      <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
         {value}
       </h2>
       <p className="text-sm text-gray-500 mt-1">
@@ -780,7 +780,7 @@ const FinancialItem = ({ label, value, color, prefix = "" }) => (
 const ActionButton = ({ icon, title, onClick, color }) => (
   <button
     onClick={onClick}
-    className={`${color} p-4 rounded-lg transition-all duration-200 transform hover:scale-105 flex flex-col items-center space-y-2`}
+    className={`${color} p-3 sm:p-4 rounded-xl shadow-sm hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 flex flex-col items-center space-y-2`}
   >
     <span className="text-2xl">{icon}</span>
     <span className="text-sm font-medium text-center">{title}</span>

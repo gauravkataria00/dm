@@ -78,7 +78,7 @@ export default function AddMilk() {
     <MainLayout>
       <h1 className="text-2xl font-bold mb-4">Add Milk Entry</h1>
 
-      <div className="bg-white p-4 rounded-lg shadow space-y-4">
+      <div className="bg-white rounded-2xl shadow-sm ring-1 ring-black/10 p-6 space-y-5">
         {loading ? (
           <div className="text-center text-gray-500">Loading customers...</div>
         ) : clients.length === 0 ? (
@@ -87,11 +87,11 @@ export default function AddMilk() {
           </div>
         ) : (
           <>
-            <label className="block font-medium">Customer</label>
+            <label className="block text-sm font-semibold text-gray-700">Customer</label>
             <select
               value={selectedClientId}
               onChange={(e) => setSelectedClientId(e.target.value)}
-              className="w-full border p-2 rounded"
+              className="w-full border border-gray-200 bg-white rounded-xl px-4 py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               {clients.map((client) => (
                 <option key={client.id} value={client.id}>
@@ -101,14 +101,14 @@ export default function AddMilk() {
             </select>
 
             {/* Milk Type */}
-            <div className="flex gap-4">
+            <div className="flex gap-3">
               <button
                 type="button"
                 onClick={() => setType("cow")}
-                className={`px-4 py-2 rounded ${
+                className={`flex-1 text-center px-4 py-2 rounded-xl font-semibold transition ${
                   type === "cow"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-200"
+                    ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md"
+                    : "bg-gray-100 text-gray-800 hover:bg-gray-200"
                 }`}
               >
                 Cow
@@ -117,10 +117,10 @@ export default function AddMilk() {
               <button
                 type="button"
                 onClick={() => setType("buffalo")}
-                className={`px-4 py-2 rounded ${
+                className={`flex-1 text-center px-4 py-2 rounded-xl font-semibold transition ${
                   type === "buffalo"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-200"
+                    ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md"
+                    : "bg-gray-100 text-gray-800 hover:bg-gray-200"
                 }`}
               >
                 Buffalo
@@ -133,7 +133,7 @@ export default function AddMilk() {
               placeholder="Litres"
               value={litres}
               onChange={(e) => setLitres(e.target.value)}
-              className="w-full border p-2 rounded"
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
 
             <input
@@ -141,7 +141,7 @@ export default function AddMilk() {
               placeholder="Fat %"
               value={fat}
               onChange={(e) => setFat(e.target.value)}
-              className="w-full border p-2 rounded"
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
 
             <input
@@ -149,7 +149,7 @@ export default function AddMilk() {
               placeholder="SNF %"
               value={snf}
               onChange={(e) => setSnf(e.target.value)}
-              className="w-full border p-2 rounded"
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
 
             {/* Calculation */}
@@ -162,7 +162,7 @@ export default function AddMilk() {
               type="button"
               onClick={handleSave}
               disabled={isSubmitting}
-              className="w-full bg-blue-600 text-white py-2 rounded disabled:opacity-50"
+              className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition disabled:opacity-50"
             >
               {isSubmitting ? "Saving..." : "Save Entry"}
             </button>

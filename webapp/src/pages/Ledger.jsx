@@ -97,52 +97,83 @@ Dairy Manager Pro`;
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-sm ring-1 ring-black/10 overflow-hidden">
         {loading ? (
           <div className="p-8 text-center text-gray-500">Loading ledger...</div>
         ) : entries.length === 0 ? (
           <div className="p-8 text-center text-gray-500">No milk entries found</div>
         ) : (
-          <div className="overflow-x-auto w-full">
-            <table className="w-full">
-              <thead className="bg-gray-100 border-b">
-                <tr>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Customer</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Type</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Litres</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Fat %</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">SNF %</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Rate</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Total</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Date</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {entries.map((entry) => (
-                  <tr key={entry.id} className="border-b hover:bg-gray-50 transition">
-                    <td className="px-6 py-4 font-medium text-gray-800">{entry.clientName}</td>
-                    <td className="px-6 py-4 text-gray-600 capitalize">{entry.type}</td>
-                    <td className="px-6 py-4 text-gray-600">{entry.litres} L</td>
-                    <td className="px-6 py-4 text-gray-600">{formatFatValue(entry.fat)}</td>
-                    <td className="px-6 py-4 text-gray-600">{formatSnfValue(entry.snf)}</td>
-                    <td className="px-6 py-4 text-gray-600">₹{entry.rate.toFixed(2)}</td>
-                    <td className="px-6 py-4 font-semibold text-green-600">₹{entry.total.toFixed(2)}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{new Date(entry.createdAt).toLocaleDateString()}</td>
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={() => handleSendWhatsApp(entry)}
-                        className="bg-green-600 text-white px-3 py-2 rounded text-sm hover:bg-green-700 flex items-center gap-2 transition-colors"
-                      >
-                        <FaWhatsapp className="w-4 h-4" />
-                        <span className="hidden sm:inline">Send</span>
-                      </button>
-                    </td>
+          <>
+            {/* Mobile cards */}
+            <div className="space-y-4 md:hidden">
+              {entries.map((entry) => (
+                <div key={entry.id} className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="font-semibold text-gray-900">{entry.clientName}</div>
+                      <div className="text-sm text-gray-600">{entry.type} milk • {entry.litres}L</div>
+                      <div className="text-xs text-gray-500">{new Date(entry.createdAt).toLocaleDateString()}</div>
+                    </div>
+                    <button
+                      onClick={() => handleSendWhatsApp(entry)}
+                      className="bg-green-600 text-white px-3 py-2 rounded text-xs hover:bg-green-700 flex items-center gap-2 transition-colors"
+                    >
+                      <FaWhatsapp className="w-4 h-4" />
+                      <span>Send</span>
+                    </button>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-gray-600">
+                    <div>Fat: {formatFatValue(entry.fat)}</div>
+                    <div>SNF: {formatSnfValue(entry.snf)}</div>
+                    <div>Rate: ₹{entry.rate.toFixed(2)}</div>
+                    <div className="font-semibold text-green-600">Total: ₹{entry.total.toFixed(2)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto w-full">
+              <table className="w-full">
+                <thead className="bg-gray-100 border-b">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Customer</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Type</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Litres</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Fat %</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">SNF %</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Rate</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Total</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Date</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {entries.map((entry) => (
+                    <tr key={entry.id} className="border-b hover:bg-gray-50 transition">
+                      <td className="px-6 py-4 font-medium text-gray-800">{entry.clientName}</td>
+                      <td className="px-6 py-4 text-gray-600 capitalize">{entry.type}</td>
+                      <td className="px-6 py-4 text-gray-600">{entry.litres} L</td>
+                      <td className="px-6 py-4 text-gray-600">{formatFatValue(entry.fat)}</td>
+                      <td className="px-6 py-4 text-gray-600">{formatSnfValue(entry.snf)}</td>
+                      <td className="px-6 py-4 text-gray-600">₹{entry.rate.toFixed(2)}</td>
+                      <td className="px-6 py-4 font-semibold text-green-600">₹{entry.total.toFixed(2)}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{new Date(entry.createdAt).toLocaleDateString()}</td>
+                      <td className="px-6 py-4">
+                        <button
+                          onClick={() => handleSendWhatsApp(entry)}
+                          className="bg-green-600 text-white px-3 py-2 rounded text-sm hover:bg-green-700 flex items-center gap-2 transition-colors"
+                        >
+                          <FaWhatsapp className="w-4 h-4" />
+                          <span className="hidden sm:inline">Send</span>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </MainLayout>
