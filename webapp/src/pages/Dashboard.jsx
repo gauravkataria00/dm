@@ -406,7 +406,7 @@ export default function Dashboard() {
 
     return Object.entries(clientRevenue)
       .map(([clientId, revenue]) => {
-        const client = clients.find(c => c.id === parseInt(clientId));
+        const client = clients.find(c => c.id == clientId);
         return {
           name: client?.name || 'Unknown Client',
           revenue,
@@ -654,7 +654,7 @@ export default function Dashboard() {
                     {index + 1}
                   </div>
                   <div>
-                    <div className="font-medium text-gray-900 mb-1">{client.name}</div>
+                    <div className="font-medium text-gray-900">{client.name}</div>
                     <div className="text-sm text-gray-500">₹{client.revenue.toFixed(0)} revenue</div>
                   </div>
                 </div>
