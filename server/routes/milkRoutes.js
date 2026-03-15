@@ -1,55 +1,52 @@
 const express = require("express");
 const router = express.Router();
+const MilkEntry = require("../models/MilkEntry");
+const Client = require("../models/Client");
 
-// Uses global.db (sqlite) if available.
-
-router.get("/", (req, res) => {
-  const db = global.db;
-  if (!db) return res.status(500).json({ error: "DB not initialized" });
-
-  const query = `
-    SELECT m.id, m.clientId, c.name AS clientName, m.type, m.litres, m.fat, m.snf, m.rate, m.total, m.createdAt
-    FROM milk_entries m
-    LEFT JOIN clients c ON m.clientId = c.id
-    ORDER BY m.createdAt DESC
-  `;
-
-  db.all(query, [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
+router.get("/", async (req, res) => {
+  try {
+    const milkEntries = await MilkEntry.find().populate('clientId', 'name').sort({ createdAt: -1 });
+    res.json(milkEntries.map(entry => ({
+      id: entry._id,
+      clientId: entry.clientId._id,
+      clientName: entry.clientId.name,
+      type: entry.type,
+      litres: entry.litres,
+      fat: entry.fat,
+      snf: entry.snf,
+      rate: entry.rate,
+      total: entry.total,
+      createdAt: entry.createdAt
+    })));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
-router.post("/", (req, res) => {
-  const db = global.db;
-  if (!db) return res.status(500).json({ error: "DB not initialized" });
+router.post("/", async (req, res) => {
+  try {
+    const { clientId, type, litres, fat, snf, rate, total } = req.body;
+    if (!clientId) return res.status(400).json({ error: "clientId is required" });
 
-  const { clientId, type, litres, fat, snf, rate, total } = req.body;
-  if (!clientId) return res.status(400).json({ error: "clientId is required" });
+    const milkEntry = new MilkEntry({ clientId, type, litres, fat, snf, rate, total });
+    await milkEntry.save();
 
-  const stmt = db.prepare(
-    `INSERT INTO milk_entries (clientId, type, litres, fat, snf, rate, total) VALUES (?, ?, ?, ?, ?, ?, ?)`
-  );
-
-  stmt.run([clientId, type, litres, fat, snf, rate, total], function (err) {
-    if (err) return res.status(500).json({ error: err.message });
-
-    db.get(
-      `
-      SELECT m.id, m.clientId, c.name AS clientName, m.type, m.litres, m.fat, m.snf, m.rate, m.total, m.createdAt
-      FROM milk_entries m
-      LEFT JOIN clients c ON m.clientId = c.id
-      WHERE m.id = ?
-    `,
-      [this.lastID],
-      (err2, row) => {
-        if (err2) return res.status(500).json({ error: err2.message });
-        res.json(row);
-      }
-    );
-  });
-
-  if (stmt.finalize) stmt.finalize();
+    await milkEntry.populate('clientId', 'name');
+    res.json({
+      id: milkEntry._id,
+      clientId: milkEntry.clientId._id,
+      clientName: milkEntry.clientId.name,
+      type: milkEntry.type,
+      litres: milkEntry.litres,
+      fat: milkEntry.fat,
+      snf: milkEntry.snf,
+      rate: milkEntry.rate,
+      total: milkEntry.total,
+      createdAt: milkEntry.createdAt
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 module.exports = router;

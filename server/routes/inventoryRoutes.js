@@ -1,224 +1,230 @@
 const express = require("express");
 const router = express.Router();
-
-// Uses global.db (sqlite) if available.
+const Inventory = require("../models/Inventory");
+const MilkEntry = require("../models/MilkEntry");
+const ConsumerSale = require("../models/ConsumerSale");
 
 // Get all inventory records
-router.get("/", (req, res) => {
-  const db = global.db;
-  if (!db) return res.status(500).json({ error: "DB not initialized" });
-
-  const query = `SELECT * FROM inventory ORDER BY date DESC, createdAt DESC`;
-
-  db.all(query, [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
+router.get("/", async (req, res) => {
+  try {
+    const inventory = await Inventory.find().sort({ date: -1, createdAt: -1 });
+    res.json(inventory.map(item => ({
+      id: item._id,
+      type: item.type,
+      opening_stock: item.opening_stock,
+      received: item.received,
+      sold: item.sold,
+      closing_stock: item.closing_stock,
+      date: item.date,
+      createdAt: item.createdAt
+    })));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Get inventory for a specific date
-router.get("/date/:date", (req, res) => {
-  const db = global.db;
-  if (!db) return res.status(500).json({ error: "DB not initialized" });
-
-  const { date } = req.params;
-
-  const query = `SELECT * FROM inventory WHERE date = ? ORDER BY createdAt DESC`;
-
-  db.all(query, [date], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
+router.get("/date/:date", async (req, res) => {
+  try {
+    const inventory = await Inventory.find({ date: req.params.date }).sort({ createdAt: -1 });
+    res.json(inventory.map(item => ({
+      id: item._id,
+      type: item.type,
+      opening_stock: item.opening_stock,
+      received: item.received,
+      sold: item.sold,
+      closing_stock: item.closing_stock,
+      date: item.date,
+      createdAt: item.createdAt
+    })));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Get today's inventory
-router.get("/today", (req, res) => {
-  const db = global.db;
-  if (!db) return res.status(500).json({ error: "DB not initialized" });
-
-  const today = new Date().toISOString().split('T')[0];
-
-  const query = `SELECT * FROM inventory WHERE date = ? ORDER BY createdAt DESC`;
-
-  db.all(query, [today], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
+router.get("/today", async (req, res) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const inventory = await Inventory.find({ date: today }).sort({ createdAt: -1 });
+    res.json(inventory.map(item => ({
+      id: item._id,
+      type: item.type,
+      opening_stock: item.opening_stock,
+      received: item.received,
+      sold: item.sold,
+      closing_stock: item.closing_stock,
+      date: item.date,
+      createdAt: item.createdAt
+    })));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Create new inventory record
-router.post("/", (req, res) => {
-  const db = global.db;
-  if (!db) return res.status(500).json({ error: "DB not initialized" });
+router.post("/", async (req, res) => {
+  try {
+    const { type, opening_stock, received, sold, closing_stock, date } = req.body;
 
-  const { type, opening_stock, received, sold, closing_stock, date } = req.body;
+    if (!type || !date) {
+      return res.status(400).json({ error: "type and date are required" });
+    }
 
-  if (!type || !date) {
-    return res.status(400).json({ error: "type and date are required" });
-  }
-
-  const stmt = db.prepare(
-    `INSERT INTO inventory (type, opening_stock, received, sold, closing_stock, date) VALUES (?, ?, ?, ?, ?, ?)`
-  );
-
-  stmt.run([
-    type,
-    opening_stock || 0,
-    received || 0,
-    sold || 0,
-    closing_stock || 0,
-    date
-  ], function (err) {
-    if (err) return res.status(500).json({ error: err.message });
-
-    db.get("SELECT * FROM inventory WHERE id = ?", [this.lastID], (err, row) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json(row);
+    const inventory = new Inventory({
+      type,
+      opening_stock: opening_stock || 0,
+      received: received || 0,
+      sold: sold || 0,
+      closing_stock: closing_stock || 0,
+      date
     });
-  });
+
+    await inventory.save();
+
+    res.json({
+      id: inventory._id,
+      type: inventory.type,
+      opening_stock: inventory.opening_stock,
+      received: inventory.received,
+      sold: inventory.sold,
+      closing_stock: inventory.closing_stock,
+      date: inventory.date,
+      createdAt: inventory.createdAt
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Update inventory record
-router.put("/:id", (req, res) => {
-  const db = global.db;
-  if (!db) return res.status(500).json({ error: "DB not initialized" });
+router.put("/:id", async (req, res) => {
+  try {
+    const { type, opening_stock, received, sold, closing_stock, date } = req.body;
 
-  const { id } = req.params;
-  const { type, opening_stock, received, sold, closing_stock, date } = req.body;
+    const inventory = await Inventory.findByIdAndUpdate(req.params.id, {
+      type,
+      opening_stock,
+      received,
+      sold,
+      closing_stock,
+      date
+    }, { new: true });
 
-  db.run(
-    "UPDATE inventory SET type = ?, opening_stock = ?, received = ?, sold = ?, closing_stock = ?, date = ? WHERE id = ?",
-    [type, opening_stock, received, sold, closing_stock, date, id],
-    function(err) {
-      if (err) return res.status(500).json({ error: err.message });
-
-      if (this.changes === 0) {
-        return res.status(404).json({ error: "Inventory record not found" });
-      }
-
-      db.get("SELECT * FROM inventory WHERE id = ?", [id], (err, row) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(row);
-      });
+    if (!inventory) {
+      return res.status(404).json({ error: "Inventory record not found" });
     }
-  );
+
+    res.json({
+      id: inventory._id,
+      type: inventory.type,
+      opening_stock: inventory.opening_stock,
+      received: inventory.received,
+      sold: inventory.sold,
+      closing_stock: inventory.closing_stock,
+      date: inventory.date,
+      createdAt: inventory.createdAt
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Auto-calculate inventory for today based on milk entries and sales
-router.post("/calculate/today", (req, res) => {
-  const db = global.db;
-  if (!db) return res.status(500).json({ error: "DB not initialized" });
+router.post("/calculate/today", async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
 
-  const today = new Date().toISOString().split('T')[0];
+    // Get milk received today (from suppliers)
+    const receivedData = await MilkEntry.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: today, $lt: tomorrow }
+        }
+      },
+      {
+        $group: {
+          _id: "$type",
+          totalReceived: { $sum: "$litres" }
+        }
+      }
+    ]);
 
-  // Get milk received today (from suppliers)
-  const receivedQuery = `
-    SELECT type, SUM(litres) as totalReceived
-    FROM milk_entries
-    WHERE DATE(createdAt) = DATE(?)
-    GROUP BY type
-  `;
+    // Get milk sold today (to consumers) - assuming consumer sales don't specify type, or handle accordingly
+    const soldData = await ConsumerSale.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: today, $lt: tomorrow }
+        }
+      },
+      {
+        $group: {
+          _id: "$type", // This might be 'milk', need to adjust
+          totalSold: { $sum: "$litres" }
+        }
+      }
+    ]);
 
-  // Get milk sold today (to consumers)
-  const soldQuery = `
-    SELECT type, SUM(litres) as totalSold
-    FROM consumer_sales
-    WHERE DATE(createdAt) = DATE(?)
-    GROUP BY type
-  `;
-
-  Promise.all([
-    new Promise((resolve, reject) => {
-      db.all(receivedQuery, [today], (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows);
-      });
-    }),
-    new Promise((resolve, reject) => {
-      db.all(soldQuery, [today], (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows);
-      });
-    })
-  ]).then(([receivedData, soldData]) => {
     // Get yesterday's closing stock
-    const yesterday = new Date();
+    const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = yesterday.toISOString().split('T')[0];
 
-    const yesterdayQuery = `SELECT * FROM inventory WHERE date = ?`;
+    const yesterdayRecords = await Inventory.find({ date: yesterdayStr });
 
-    db.all(yesterdayQuery, [yesterdayStr], (err, yesterdayRecords) => {
-      if (err) return res.status(500).json({ error: err.message });
+    const inventoryRecords = [];
 
-      const inventoryRecords = [];
+    // Process Cow milk
+    const cowReceived = receivedData.find(r => r._id === 'Cow')?.totalReceived || 0;
+    const cowSold = soldData.find(s => s._id === 'Cow' || s._id === 'milk')?.totalSold || 0; // Adjust for consumer sales
+    const cowYesterday = yesterdayRecords.find(y => y.type === 'Cow')?.closing_stock || 0;
 
-      // Process Cow milk
-      const cowReceived = receivedData.find(r => r.type === 'Cow')?.totalReceived || 0;
-      const cowSold = soldData.find(s => s.type === 'Cow')?.totalSold || 0;
-      const cowYesterday = yesterdayRecords.find(y => y.type === 'Cow')?.closing_stock || 0;
-
-      if (cowReceived > 0 || cowSold > 0 || cowYesterday > 0) {
-        inventoryRecords.push({
-          type: 'Cow',
-          opening_stock: cowYesterday,
-          received: cowReceived,
-          sold: cowSold,
-          closing_stock: cowYesterday + cowReceived - cowSold,
-          date: today
-        });
-      }
-
-      // Process Buffalo milk
-      const buffaloReceived = receivedData.find(r => r.type === 'Buffalo')?.totalReceived || 0;
-      const buffaloSold = soldData.find(s => s.type === 'Buffalo')?.totalSold || 0;
-      const buffaloYesterday = yesterdayRecords.find(y => y.type === 'Buffalo')?.closing_stock || 0;
-
-      if (buffaloReceived > 0 || buffaloSold > 0 || buffaloYesterday > 0) {
-        inventoryRecords.push({
-          type: 'Buffalo',
-          opening_stock: buffaloYesterday,
-          received: buffaloReceived,
-          sold: buffaloSold,
-          closing_stock: buffaloYesterday + buffaloReceived - buffaloSold,
-          date: today
-        });
-      }
-
-      // Insert inventory records
-      const insertPromises = inventoryRecords.map(record => {
-        return new Promise((resolve, reject) => {
-          const stmt = db.prepare(
-            `INSERT OR REPLACE INTO inventory (type, opening_stock, received, sold, closing_stock, date)
-             VALUES (?, ?, ?, ?, ?, ?)`
-          );
-
-          stmt.run([
-            record.type,
-            record.opening_stock,
-            record.received,
-            record.sold,
-            record.closing_stock,
-            record.date
-          ], function(err) {
-            if (err) reject(err);
-            else resolve(this.lastID);
-          });
-        });
+    if (cowReceived > 0 || cowSold > 0 || cowYesterday > 0) {
+      inventoryRecords.push({
+        type: 'Cow',
+        opening_stock: cowYesterday,
+        received: cowReceived,
+        sold: cowSold,
+        closing_stock: cowYesterday + cowReceived - cowSold,
+        date: today.toISOString().split('T')[0]
       });
+    }
 
-      Promise.all(insertPromises).then(() => {
-        res.json({
-          message: "Inventory calculated and updated successfully",
-          records: inventoryRecords
-        });
-      }).catch(err => {
-        res.status(500).json({ error: err.message });
+    // Process Buffalo milk
+    const buffaloReceived = receivedData.find(r => r._id === 'Buffalo')?.totalReceived || 0;
+    const buffaloSold = soldData.find(s => s._id === 'Buffalo' || s._id === 'milk')?.totalSold || 0; // Adjust
+    const buffaloYesterday = yesterdayRecords.find(y => y.type === 'Buffalo')?.closing_stock || 0;
+
+    if (buffaloReceived > 0 || buffaloSold > 0 || buffaloYesterday > 0) {
+      inventoryRecords.push({
+        type: 'Buffalo',
+        opening_stock: buffaloYesterday,
+        received: buffaloReceived,
+        sold: buffaloSold,
+        closing_stock: buffaloYesterday + buffaloReceived - buffaloSold,
+        date: today.toISOString().split('T')[0]
       });
+    }
+
+    // Insert or update inventory records
+    for (const record of inventoryRecords) {
+      await Inventory.findOneAndUpdate(
+        { type: record.type, date: record.date },
+        record,
+        { upsert: true, new: true }
+      );
+    }
+
+    res.json({
+      message: "Inventory calculated and updated successfully",
+      records: inventoryRecords
     });
-  }).catch(err => {
-    res.status(500).json({ error: err.message });
-  });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 module.exports = router;

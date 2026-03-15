@@ -1,105 +1,91 @@
 const express = require("express");
 const router = express.Router();
-
-// Uses global.db (sqlite) if available.
+const Advance = require("../models/Advance");
 
 // Get all advances with client names
-router.get("/", (req, res) => {
-  const db = global.db;
-  if (!db) return res.status(500).json({ error: "DB not initialized" });
-
-  const query = `
-    SELECT a.*, c.name AS clientName
-    FROM advances a
-    LEFT JOIN clients c ON a.clientId = c.id
-    ORDER BY a.createdAt DESC
-  `;
-
-  db.all(query, [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
+router.get("/", async (req, res) => {
+  try {
+    const advances = await Advance.find().populate('clientId', 'name').sort({ createdAt: -1 });
+    res.json(advances.map(advance => ({
+      id: advance._id,
+      clientId: advance.clientId._id,
+      clientName: advance.clientId.name,
+      amount: advance.amount,
+      date: advance.date,
+      purpose: advance.purpose,
+      status: advance.status,
+      createdAt: advance.createdAt
+    })));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Get advances for a specific client
-router.get("/client/:clientId", (req, res) => {
-  const db = global.db;
-  if (!db) return res.status(500).json({ error: "DB not initialized" });
-
-  const { clientId } = req.params;
-
-  const query = `
-    SELECT a.*, c.name AS clientName
-    FROM advances a
-    LEFT JOIN clients c ON a.clientId = c.id
-    WHERE a.clientId = ?
-    ORDER BY a.createdAt DESC
-  `;
-
-  db.all(query, [clientId], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
+router.get("/client/:clientId", async (req, res) => {
+  try {
+    const advances = await Advance.find({ clientId: req.params.clientId }).populate('clientId', 'name').sort({ createdAt: -1 });
+    res.json(advances.map(advance => ({
+      id: advance._id,
+      clientId: advance.clientId._id,
+      clientName: advance.clientId.name,
+      amount: advance.amount,
+      date: advance.date,
+      purpose: advance.purpose,
+      status: advance.status,
+      createdAt: advance.createdAt
+    })));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Add a new advance
-router.post("/", (req, res) => {
-  const db = global.db;
-  if (!db) return res.status(500).json({ error: "DB not initialized" });
+router.post("/", async (req, res) => {
+  try {
+    const { clientId, amount, date, purpose } = req.body;
 
-  const { clientId, amount, date, purpose } = req.body;
+    if (!clientId || !amount || !date) {
+      return res.status(400).json({ error: "clientId, amount, and date are required" });
+    }
 
-  if (!clientId || !amount || !date) {
-    return res.status(400).json({ error: "clientId, amount, and date are required" });
-  }
+    const advance = new Advance({ clientId, amount, date, purpose, status: 'active' });
+    await advance.save();
+    await advance.populate('clientId', 'name');
 
-  const stmt = db.prepare(
-    `INSERT INTO advances (clientId, amount, date, purpose, status) VALUES (?, ?, ?, ?, 'active')`
-  );
-
-  stmt.run([clientId, amount, date, purpose], function (err) {
-    if (err) return res.status(500).json({ error: err.message });
-
-    // Return the created advance with client name
-    const selectQuery = `
-      SELECT a.*, c.name AS clientName
-      FROM advances a
-      LEFT JOIN clients c ON a.clientId = c.id
-      WHERE a.id = ?
-    `;
-
-    db.get(selectQuery, [this.lastID], (err, row) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json(row);
+    res.json({
+      id: advance._id,
+      clientId: advance.clientId._id,
+      clientName: advance.clientId.name,
+      amount: advance.amount,
+      date: advance.date,
+      purpose: advance.purpose,
+      status: advance.status,
+      createdAt: advance.createdAt
     });
-  });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Update advance status (when repaid)
-router.put("/:id", (req, res) => {
-  const db = global.db;
-  if (!db) return res.status(500).json({ error: "DB not initialized" });
+router.put("/:id", async (req, res) => {
+  try {
+    const { status } = req.body;
 
-  const { id } = req.params;
-  const { status } = req.body;
-
-  if (!status) {
-    return res.status(400).json({ error: "status is required" });
-  }
-
-  db.run(
-    "UPDATE advances SET status = ? WHERE id = ?",
-    [status, id],
-    function(err) {
-      if (err) return res.status(500).json({ error: err.message });
-
-      if (this.changes === 0) {
-        return res.status(404).json({ error: "Advance not found" });
-      }
-
-      res.json({ message: "Advance updated successfully" });
+    if (!status) {
+      return res.status(400).json({ error: "status is required" });
     }
-  );
+
+    const advance = await Advance.findByIdAndUpdate(req.params.id, { status }, { new: true });
+    if (!advance) {
+      return res.status(404).json({ error: "Advance not found" });
+    }
+
+    res.json({ message: "Advance updated successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 module.exports = router;

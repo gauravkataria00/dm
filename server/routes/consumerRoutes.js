@@ -1,151 +1,151 @@
 const express = require("express");
 const router = express.Router();
-
-// Uses global.db (sqlite) if available.
+const Consumer = require("../models/Consumer");
+const ConsumerSale = require("../models/ConsumerSale");
+const ConsumerPayment = require("../models/ConsumerPayment");
 
 // Get all consumers
-router.get("/", (req, res) => {
-  const db = global.db;
-  if (!db) return res.status(500).json({ error: "DB not initialized" });
-
-  const query = `SELECT * FROM consumers ORDER BY createdAt DESC`;
-
-  db.all(query, [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
+router.get("/", async (req, res) => {
+  try {
+    const consumers = await Consumer.find().sort({ createdAt: -1 });
+    res.json(consumers.map(consumer => ({
+      id: consumer._id,
+      name: consumer.name,
+      phone: consumer.phone,
+      address: consumer.address,
+      type: consumer.type,
+      credit_limit: consumer.credit_limit,
+      createdAt: consumer.createdAt
+    })));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Get single consumer by ID
-router.get("/:id", (req, res) => {
-  const db = global.db;
-  if (!db) return res.status(500).json({ error: "DB not initialized" });
-
-  const { id } = req.params;
-
-  db.get("SELECT * FROM consumers WHERE id = ?", [id], (err, row) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!row) return res.status(404).json({ error: "Consumer not found" });
-    res.json(row);
-  });
+router.get("/:id", async (req, res) => {
+  try {
+    const consumer = await Consumer.findById(req.params.id);
+    if (!consumer) return res.status(404).json({ error: "Consumer not found" });
+    res.json({
+      id: consumer._id,
+      name: consumer.name,
+      phone: consumer.phone,
+      address: consumer.address,
+      type: consumer.type,
+      credit_limit: consumer.credit_limit,
+      createdAt: consumer.createdAt
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Create new consumer
-router.post("/", (req, res) => {
-  const db = global.db;
-  if (!db) return res.status(500).json({ error: "DB not initialized" });
+router.post("/", async (req, res) => {
+  try {
+    const { name, phone, address, type, credit_limit } = req.body;
 
-  const { name, phone, address, type, credit_limit } = req.body;
+    if (!name) {
+      return res.status(400).json({ error: "Consumer name is required" });
+    }
 
-  if (!name) {
-    return res.status(400).json({ error: "Consumer name is required" });
-  }
-
-  const stmt = db.prepare(
-    `INSERT INTO consumers (name, phone, address, type, credit_limit) VALUES (?, ?, ?, ?, ?)`
-  );
-
-  stmt.run([name, phone, address, type || 'regular', credit_limit || 0], function (err) {
-    if (err) return res.status(500).json({ error: err.message });
-
-    db.get("SELECT * FROM consumers WHERE id = ?", [this.lastID], (err, row) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json(row);
+    const consumer = new Consumer({
+      name,
+      phone,
+      address,
+      type: type || 'regular',
+      credit_limit: credit_limit || 0
     });
-  });
+    await consumer.save();
+
+    res.json({
+      id: consumer._id,
+      name: consumer.name,
+      phone: consumer.phone,
+      address: consumer.address,
+      type: consumer.type,
+      credit_limit: consumer.credit_limit,
+      createdAt: consumer.createdAt
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Update consumer
-router.put("/:id", (req, res) => {
-  const db = global.db;
-  if (!db) return res.status(500).json({ error: "DB not initialized" });
+router.put("/:id", async (req, res) => {
+  try {
+    const { name, phone, address, type, credit_limit } = req.body;
 
-  const { id } = req.params;
-  const { name, phone, address, type, credit_limit } = req.body;
+    const consumer = await Consumer.findByIdAndUpdate(req.params.id, {
+      name,
+      phone,
+      address,
+      type,
+      credit_limit
+    }, { new: true });
 
-  db.run(
-    "UPDATE consumers SET name = ?, phone = ?, address = ?, type = ?, credit_limit = ? WHERE id = ?",
-    [name, phone, address, type, credit_limit, id],
-    function(err) {
-      if (err) return res.status(500).json({ error: err.message });
+    if (!consumer) return res.status(404).json({ error: "Consumer not found" });
 
-      if (this.changes === 0) {
-        return res.status(404).json({ error: "Consumer not found" });
-      }
-
-      db.get("SELECT * FROM consumers WHERE id = ?", [id], (err, row) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(row);
-      });
-    }
-  );
+    res.json({
+      id: consumer._id,
+      name: consumer.name,
+      phone: consumer.phone,
+      address: consumer.address,
+      type: consumer.type,
+      credit_limit: consumer.credit_limit,
+      createdAt: consumer.createdAt
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Delete consumer
-router.delete("/:id", (req, res) => {
-  const db = global.db;
-  if (!db) return res.status(500).json({ error: "DB not initialized" });
-
-  const { id } = req.params;
-
-  db.run("DELETE FROM consumers WHERE id = ?", [id], function(err) {
-    if (err) return res.status(500).json({ error: err.message });
-
-    if (this.changes === 0) {
-      return res.status(404).json({ error: "Consumer not found" });
-    }
-
+router.delete("/:id", async (req, res) => {
+  try {
+    await Consumer.findByIdAndDelete(req.params.id);
     res.json({ message: "Consumer deleted successfully" });
-  });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Get consumer payment summary
-router.get("/:id/summary", (req, res) => {
-  const db = global.db;
-  if (!db) return res.status(500).json({ error: "DB not initialized" });
+router.get("/:id/summary", async (req, res) => {
+  try {
+    const [totalOwed, totalPaid, pendingSales] = await Promise.all([
+      ConsumerSale.aggregate([
+        { $match: { consumerId: require('mongoose').Types.ObjectId(req.params.id) } },
+        { $group: { _id: null, amount: { $sum: "$total" } } }
+      ]),
+      ConsumerPayment.aggregate([
+        { $match: { consumerId: require('mongoose').Types.ObjectId(req.params.id) } },
+        { $group: { _id: null, amount: { $sum: "$amount" } } }
+      ]),
+      ConsumerSale.aggregate([
+        { $match: { consumerId: require('mongoose').Types.ObjectId(req.params.id), payment_status: 'pending' } },
+        { $group: { _id: null, amount: { $sum: "$total" } } }
+      ])
+    ]);
 
-  const { id } = req.params;
-
-  // Calculate total owed, paid, and pending amounts
-  const queries = {
-    totalOwed: `SELECT SUM(total) as amount FROM consumer_sales WHERE consumerId = ?`,
-    totalPaid: `SELECT SUM(amount) as amount FROM consumer_payments WHERE consumerId = ?`,
-    pendingSales: `SELECT SUM(total) as amount FROM consumer_sales WHERE consumerId = ? AND payment_status = 'pending'`
-  };
-
-  Promise.all([
-    new Promise((resolve, reject) => {
-      db.get(queries.totalOwed, [id], (err, row) => {
-        if (err) reject(err);
-        else resolve(row ? row.amount || 0 : 0);
-      });
-    }),
-    new Promise((resolve, reject) => {
-      db.get(queries.totalPaid, [id], (err, row) => {
-        if (err) reject(err);
-        else resolve(row ? row.amount || 0 : 0);
-      });
-    }),
-    new Promise((resolve, reject) => {
-      db.get(queries.pendingSales, [id], (err, row) => {
-        if (err) reject(err);
-        else resolve(row ? row.amount || 0 : 0);
-      });
-    })
-  ]).then(([totalOwed, totalPaid, pendingSales]) => {
-    const outstanding = totalOwed - totalPaid;
+    const totalOwedAmount = totalOwed[0]?.amount || 0;
+    const totalPaidAmount = totalPaid[0]?.amount || 0;
+    const pendingSalesAmount = pendingSales[0]?.amount || 0;
+    const outstanding = totalOwedAmount - totalPaidAmount;
 
     res.json({
-      consumerId: parseInt(id),
-      totalOwed,
-      totalPaid,
+      consumerId: req.params.id,
+      totalOwed: totalOwedAmount,
+      totalPaid: totalPaidAmount,
       outstanding,
-      pendingSales,
+      pendingSales: pendingSalesAmount,
       status: outstanding > 0 ? 'has_balance' : 'settled'
     });
-  }).catch(err => {
-    res.status(500).json({ error: err.message });
-  });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 module.exports = router;

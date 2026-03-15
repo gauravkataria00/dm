@@ -49,6 +49,7 @@ export default function Settings() {
               </label>
               <input
                 type="number"
+                step="0.01"
                 className="w-full p-2 border border-gray-300 rounded-md"
                 value={cowRate}
                 onChange={(e) => setCowRate(Number(e.target.value))}
@@ -60,6 +61,7 @@ export default function Settings() {
               </label>
               <input
                 type="number"
+                step="0.01"
                 className="w-full p-2 border border-gray-300 rounded-md"
                 value={buffaloRate}
                 onChange={(e) => setBuffaloRate(Number(e.target.value))}

@@ -1,105 +1,105 @@
 const express = require("express");
 const router = express.Router();
-
-// Uses global.db (sqlite) if available.
+const ConsumerPayment = require("../models/ConsumerPayment");
 
 // Get all consumer payments
-router.get("/", (req, res) => {
-  const db = global.db;
-  if (!db) return res.status(500).json({ error: "DB not initialized" });
-
-  const query = `
-    SELECT cp.*, c.name AS consumerName
-    FROM consumer_payments cp
-    LEFT JOIN consumers c ON cp.consumerId = c.id
-    ORDER BY cp.createdAt DESC
-  `;
-
-  db.all(query, [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
+router.get("/", async (req, res) => {
+  try {
+    const payments = await ConsumerPayment.find().populate('consumerId', 'name').sort({ createdAt: -1 });
+    res.json(payments.map(payment => ({
+      id: payment._id,
+      consumerId: payment.consumerId._id,
+      consumerName: payment.consumerId.name,
+      amount: payment.amount,
+      date: payment.date,
+      payment_method: payment.payment_method,
+      notes: payment.notes,
+      createdAt: payment.createdAt
+    })));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Get payments for a specific consumer
-router.get("/consumer/:consumerId", (req, res) => {
-  const db = global.db;
-  if (!db) return res.status(500).json({ error: "DB not initialized" });
-
-  const { consumerId } = req.params;
-
-  const query = `
-    SELECT cp.*, c.name AS consumerName
-    FROM consumer_payments cp
-    LEFT JOIN consumers c ON cp.consumerId = c.id
-    WHERE cp.consumerId = ?
-    ORDER BY cp.createdAt DESC
-  `;
-
-  db.all(query, [consumerId], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
+router.get("/consumer/:consumerId", async (req, res) => {
+  try {
+    const payments = await ConsumerPayment.find({ consumerId: req.params.consumerId }).populate('consumerId', 'name').sort({ createdAt: -1 });
+    res.json(payments.map(payment => ({
+      id: payment._id,
+      consumerId: payment.consumerId._id,
+      consumerName: payment.consumerId.name,
+      amount: payment.amount,
+      date: payment.date,
+      payment_method: payment.payment_method,
+      notes: payment.notes,
+      createdAt: payment.createdAt
+    })));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Create new consumer payment
-router.post("/", (req, res) => {
-  const db = global.db;
-  if (!db) return res.status(500).json({ error: "DB not initialized" });
+router.post("/", async (req, res) => {
+  try {
+    const { consumer_id, amount, payment_date, payment_method, notes } = req.body;
 
-  const { consumer_id, amount, payment_date, payment_method, notes } = req.body;
+    if (!consumer_id || !amount || !payment_date) {
+      return res.status(400).json({ error: "consumer_id, amount, and payment_date are required" });
+    }
 
-  if (!consumer_id || !amount || !payment_date) {
-    return res.status(400).json({ error: "consumer_id, amount, and payment_date are required" });
-  }
-
-  const stmt = db.prepare(
-    `INSERT INTO consumer_payments (consumerId, amount, date, payment_method, notes) VALUES (?, ?, ?, ?, ?)`
-  );
-
-  const notesText = notes;
-
-  stmt.run([consumer_id, amount, payment_date, payment_method || 'cash', notesText], function (err) {
-    if (err) return res.status(500).json({ error: err.message });
-
-    const selectQuery = `
-      SELECT cp.*, c.name AS consumerName
-      FROM consumer_payments cp
-      LEFT JOIN consumers c ON cp.consumerId = c.id
-      WHERE cp.id = ?
-    `;
-
-    db.get(selectQuery, [this.lastID], (err, row) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json(row);
+    const payment = new ConsumerPayment({
+      consumerId: consumer_id,
+      amount,
+      date: payment_date,
+      payment_method: payment_method || 'cash',
+      notes
     });
-  });
+
+    await payment.save();
+    await payment.populate('consumerId', 'name');
+
+    res.json({
+      id: payment._id,
+      consumerId: payment.consumerId._id,
+      consumerName: payment.consumerId.name,
+      amount: payment.amount,
+      date: payment.date,
+      payment_method: payment.payment_method,
+      notes: payment.notes,
+      createdAt: payment.createdAt
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Get payment summary for a consumer
-router.get("/summary/:consumerId", (req, res) => {
-  const db = global.db;
-  if (!db) return res.status(500).json({ error: "DB not initialized" });
+router.get("/summary/:consumerId", async (req, res) => {
+  try {
+    const summary = await ConsumerPayment.aggregate([
+      { $match: { consumerId: require('mongoose').Types.ObjectId(req.params.consumerId) } },
+      {
+        $group: {
+          _id: null,
+          totalPayments: { $sum: 1 },
+          totalPaid: { $sum: "$amount" },
+          lastPaymentDate: { $max: "$date" }
+        }
+      }
+    ]);
 
-  const { consumerId } = req.params;
-
-  const query = `
-    SELECT
-      COUNT(*) as totalPayments,
-      SUM(amount) as totalPaid,
-      MAX(date) as lastPaymentDate
-    FROM consumer_payments
-    WHERE consumerId = ?
-  `;
-
-  db.get(query, [consumerId], (err, row) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(row || {
+    const result = summary[0] || {
       totalPayments: 0,
       totalPaid: 0,
       lastPaymentDate: null
-    });
-  });
+    };
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 module.exports = router;

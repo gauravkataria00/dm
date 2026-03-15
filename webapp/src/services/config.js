@@ -1,1 +1,4 @@
-export const API_BASE_URL = "https://dairy-backend-pw3n.onrender.com";
+export const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  import.meta.env.VITE_API_URL ||
+  "http://localhost:5000";

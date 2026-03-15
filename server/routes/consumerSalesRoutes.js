@@ -1,159 +1,187 @@
 const express = require("express");
 const router = express.Router();
-
-// Uses global.db (sqlite) if available.
+const ConsumerSale = require("../models/ConsumerSale");
 
 // Get all consumer sales
-router.get("/", (req, res) => {
-  const db = global.db;
-  if (!db) return res.status(500).json({ error: "DB not initialized" });
-
-  const query = `
-    SELECT cs.*, c.name AS consumerName
-    FROM consumer_sales cs
-    LEFT JOIN consumers c ON cs.consumerId = c.id
-    ORDER BY cs.createdAt DESC
-  `;
-
-  db.all(query, [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
+router.get("/", async (req, res) => {
+  try {
+    const sales = await ConsumerSale.find().populate('consumerId', 'name').sort({ createdAt: -1 });
+    res.json(sales.map(sale => ({
+      id: sale._id,
+      consumerId: sale.consumerId._id,
+      consumerName: sale.consumerId.name,
+      type: sale.type,
+      litres: sale.litres,
+      rate: sale.rate,
+      total: sale.total,
+      payment_status: sale.payment_status,
+      sale_date: sale.sale_date,
+      createdAt: sale.createdAt
+    })));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Get sales for a specific consumer
-router.get("/consumer/:consumerId", (req, res) => {
-  const db = global.db;
-  if (!db) return res.status(500).json({ error: "DB not initialized" });
-
-  const { consumerId } = req.params;
-
-  const query = `
-    SELECT cs.*, c.name AS consumerName
-    FROM consumer_sales cs
-    LEFT JOIN consumers c ON cs.consumerId = c.id
-    WHERE cs.consumerId = ?
-    ORDER BY cs.createdAt DESC
-  `;
-
-  db.all(query, [consumerId], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
+router.get("/consumer/:consumerId", async (req, res) => {
+  try {
+    const sales = await ConsumerSale.find({ consumerId: req.params.consumerId }).populate('consumerId', 'name').sort({ createdAt: -1 });
+    res.json(sales.map(sale => ({
+      id: sale._id,
+      consumerId: sale.consumerId._id,
+      consumerName: sale.consumerId.name,
+      type: sale.type,
+      litres: sale.litres,
+      rate: sale.rate,
+      total: sale.total,
+      payment_status: sale.payment_status,
+      sale_date: sale.sale_date,
+      createdAt: sale.createdAt
+    })));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Get today's sales
-router.get("/today", (req, res) => {
-  const db = global.db;
-  if (!db) return res.status(500).json({ error: "DB not initialized" });
+router.get("/today", async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
 
-  const today = new Date().toISOString().split('T')[0];
+    const sales = await ConsumerSale.find({
+      createdAt: { $gte: today, $lt: tomorrow }
+    }).populate('consumerId', 'name').sort({ createdAt: -1 });
 
-  const query = `
-    SELECT cs.*, c.name AS consumerName
-    FROM consumer_sales cs
-    LEFT JOIN consumers c ON cs.consumerId = c.id
-    WHERE DATE(cs.createdAt) = DATE(?)
-    ORDER BY cs.createdAt DESC
-  `;
-
-  db.all(query, [today], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
+    res.json(sales.map(sale => ({
+      id: sale._id,
+      consumerId: sale.consumerId._id,
+      consumerName: sale.consumerId.name,
+      type: sale.type,
+      litres: sale.litres,
+      rate: sale.rate,
+      total: sale.total,
+      payment_status: sale.payment_status,
+      sale_date: sale.sale_date,
+      createdAt: sale.createdAt
+    })));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Create new consumer sale
-router.post("/", (req, res) => {
-  const db = global.db;
-  if (!db) return res.status(500).json({ error: "DB not initialized" });
+router.post("/", async (req, res) => {
+  try {
+    const { consumer_id, quantity, price_per_liter, total_amount, payment_status, sale_date } = req.body;
 
-  const { consumer_id, quantity, price_per_liter, total_amount, payment_status, sale_date } = req.body;
+    if (!consumer_id || !quantity || !price_per_liter || !total_amount) {
+      return res.status(400).json({ error: "consumer_id, quantity, price_per_liter, and total_amount are required" });
+    }
 
-  if (!consumer_id || !quantity || !price_per_liter || !total_amount) {
-    return res.status(400).json({ error: "consumer_id, quantity, price_per_liter, and total_amount are required" });
-  }
-
-  const stmt = db.prepare(
-    `INSERT INTO consumer_sales (consumerId, type, litres, rate, total, payment_status, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)`
-  );
-
-  stmt.run([consumer_id, 'milk', quantity, price_per_liter, total_amount, payment_status || 'pending', sale_date || new Date().toISOString()], function (err) {
-    if (err) return res.status(500).json({ error: err.message });
-
-    const selectQuery = `
-      SELECT cs.*, c.name AS consumerName
-      FROM consumer_sales cs
-      LEFT JOIN consumers c ON cs.consumerId = c.id
-      WHERE cs.id = ?
-    `;
-
-    db.get(selectQuery, [this.lastID], (err, row) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json(row);
+    const sale = new ConsumerSale({
+      consumerId: consumer_id,
+      type: 'milk',
+      litres: quantity,
+      rate: price_per_liter,
+      total: total_amount,
+      payment_status: payment_status || 'pending',
+      sale_date: sale_date || new Date()
     });
-  });
+
+    await sale.save();
+    await sale.populate('consumerId', 'name');
+
+    res.json({
+      id: sale._id,
+      consumerId: sale.consumerId._id,
+      consumerName: sale.consumerId.name,
+      type: sale.type,
+      litres: sale.litres,
+      rate: sale.rate,
+      total: sale.total,
+      payment_status: sale.payment_status,
+      sale_date: sale.sale_date,
+      createdAt: sale.createdAt
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Update sale payment status
-router.put("/:id/status", (req, res) => {
-  const db = global.db;
-  if (!db) return res.status(500).json({ error: "DB not initialized" });
+router.put("/:id/status", async (req, res) => {
+  try {
+    const { payment_status } = req.body;
 
-  const { id } = req.params;
-  const { payment_status } = req.body;
-
-  if (!payment_status) {
-    return res.status(400).json({ error: "payment_status is required" });
-  }
-
-  db.run(
-    "UPDATE consumer_sales SET payment_status = ? WHERE id = ?",
-    [payment_status, id],
-    function(err) {
-      if (err) return res.status(500).json({ error: err.message });
-
-      if (this.changes === 0) {
-        return res.status(404).json({ error: "Sale not found" });
-      }
-
-      res.json({ message: "Sale status updated successfully" });
+    if (!payment_status) {
+      return res.status(400).json({ error: "payment_status is required" });
     }
-  );
+
+    const sale = await ConsumerSale.findByIdAndUpdate(req.params.id, { payment_status }, { new: true });
+    if (!sale) {
+      return res.status(404).json({ error: "Sale not found" });
+    }
+
+    res.json({ message: "Sale status updated successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Get sales summary for a date range
-router.get("/summary/range", (req, res) => {
-  const db = global.db;
-  if (!db) return res.status(500).json({ error: "DB not initialized" });
+router.get("/summary/range", async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
 
-  const { startDate, endDate } = req.query;
+    if (!startDate || !endDate) {
+      return res.status(400).json({ error: "startDate and endDate are required" });
+    }
 
-  if (!startDate || !endDate) {
-    return res.status(400).json({ error: "startDate and endDate are required" });
-  }
+    const summary = await ConsumerSale.aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: new Date(startDate),
+            $lte: new Date(endDate)
+          }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalSales: { $sum: 1 },
+          totalLitres: { $sum: "$litres" },
+          totalRevenue: { $sum: "$total" },
+          pendingAmount: {
+            $sum: {
+              $cond: [{ $eq: ["$payment_status", "pending"] }, "$total", 0]
+            }
+          },
+          paidAmount: {
+            $sum: {
+              $cond: [{ $eq: ["$payment_status", "paid"] }, "$total", 0]
+            }
+          }
+        }
+      }
+    ]);
 
-  const query = `
-    SELECT
-      COUNT(*) as totalSales,
-      SUM(litres) as totalLitres,
-      SUM(total) as totalRevenue,
-      SUM(CASE WHEN payment_status = 'pending' THEN total ELSE 0 END) as pendingAmount,
-      SUM(CASE WHEN payment_status = 'paid' THEN total ELSE 0 END) as paidAmount
-    FROM consumer_sales
-    WHERE DATE(createdAt) BETWEEN DATE(?) AND DATE(?)
-  `;
-
-  db.get(query, [startDate, endDate], (err, row) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(row || {
+    const result = summary[0] || {
       totalSales: 0,
       totalLitres: 0,
       totalRevenue: 0,
       pendingAmount: 0,
       paidAmount: 0
-    });
-  });
+    };
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 module.exports = router;
