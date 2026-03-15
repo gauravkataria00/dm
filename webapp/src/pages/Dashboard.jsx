@@ -618,7 +618,7 @@ export default function Dashboard() {
             <div className="h-64 flex items-end justify-between space-x-3">
               {monthlyTrends.map((day, index) => (
                 <div key={index} className="flex-1 flex flex-col items-center">
-                  <div className="w-full bg-gray-200 rounded-t h-32 relative mb-3">
+                  <div className="w-full rounded-t h-32 relative mb-3">
                     <div
                       className="bg-gradient-to-t from-blue-500 to-blue-400 rounded-t absolute bottom-0 w-full transition-all duration-500 flex items-end justify-center pb-2"
                       style={{
