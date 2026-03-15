@@ -408,7 +408,7 @@ export default function Dashboard() {
       .map(([clientId, revenue]) => {
         const client = clients.find(c => c.id === parseInt(clientId));
         return {
-          name: client?.name || 'Unknown',
+          name: client?.name || 'Unknown Client',
           revenue,
           percentage: 0 // Will be calculated below
         };
@@ -620,12 +620,12 @@ export default function Dashboard() {
                 <div key={index} className="flex-1 flex flex-col items-center">
                   <div className="w-full bg-gray-200 rounded-t h-32 relative mb-3">
                     <div
-                      className="bg-gradient-to-t from-blue-500 to-blue-400 rounded-t absolute bottom-0 w-full transition-all duration-500"
+                      className="bg-gradient-to-t from-blue-500 to-blue-400 rounded-t absolute bottom-0 w-full transition-all duration-500 flex items-end justify-center pb-2"
                       style={{
-                        height: `${day.litres > 0 ? Math.max((day.litres / Math.max(...monthlyTrends.map(d => d.litres))) * 100, 5) : 0}%`
+                        height: `${day.litres > 0 ? (day.litres / Math.max(...monthlyTrends.map(d => d.litres))) * 100 : 0}%`
                       }}
                     >
-                      <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-xs font-bold text-gray-700">
+                      <div className="text-xs font-bold text-white">
                         {day.litres.toFixed(1)}L
                       </div>
                     </div>
@@ -654,7 +654,7 @@ export default function Dashboard() {
                     {index + 1}
                   </div>
                   <div>
-                    <div className="font-medium text-gray-900">{client.name}</div>
+                    <div className="font-medium text-gray-900 mb-1">{client.name}</div>
                     <div className="text-sm text-gray-500">₹{client.revenue.toFixed(0)} revenue</div>
                   </div>
                 </div>
@@ -691,12 +691,12 @@ export default function Dashboard() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-sm font-medium text-gray-900 truncate">
+                    <p className="text-sm font-medium text-gray-900">
                       {activity.title}
                     </p>
                     <span className="text-sm font-bold text-gray-900">{activity.amount}</span>
                   </div>
-                  <p className="text-sm text-gray-600 truncate">{activity.subtitle}</p>
+                  <p className="text-sm text-gray-600">{activity.subtitle}</p>
                   <p className="text-xs text-gray-500 mt-2">{activity.time}</p>
                 </div>
               </div>

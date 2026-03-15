@@ -71,9 +71,9 @@ export default function MainLayout({ children }) {
       )}
 
       <div className="w-full flex-1 flex flex-col">
-        <header className="bg-white border-b border-gray-200 text-gray-800 flex items-center justify-between px-4 py-3 shadow-sm">
+        <header className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white flex items-center justify-between px-4 py-3 shadow-md">
           <button
-            className="md:hidden text-2xl text-gray-600"
+            className="md:hidden text-2xl text-white"
             onClick={() => setSidebarOpen(true)}
           >
             ☰
@@ -88,7 +88,7 @@ export default function MainLayout({ children }) {
               localStorage.removeItem("adminToken");
               window.location.href = "/login";
             }}
-            className="text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-lg transition"
+            className="text-sm text-white bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg transition"
           >
             Logout
           </button>

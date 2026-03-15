@@ -4,9 +4,11 @@ import { API_BASE_URL } from "../services/config";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
   function handleLogin(e) {
     e.preventDefault();
+    setError("");
 
     fetch(`${API_BASE_URL}/api/auth/login`, {
       method: "POST",
@@ -29,14 +31,14 @@ export default function Login() {
 
       } else {
 
-        alert("Invalid email or password");
+        setError("Invalid email or password");
 
       }
 
     })
     .catch(err => {
       console.error(err);
-      alert("Server error");
+      setError("Server error");
     });
   };
 
@@ -84,6 +86,10 @@ export default function Login() {
             Login
           </button>
         </form>
+
+        {error && (
+          <p className="text-red-500 text-sm mt-4 text-center">{error}</p>
+        )}
       </div>
     </div>
   );
