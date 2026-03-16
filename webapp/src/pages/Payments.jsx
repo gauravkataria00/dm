@@ -56,6 +56,16 @@ export default function Payments() {
     e.preventDefault();
     try {
       await createPayment(formData);
+      const client = clients.find(c => c.id === formData.clientId);
+      if (client && client.phone) {
+        const message = `Payment of ₹${formData.amount} received on ${formData.date}. Notes: ${formData.notes || 'None'}`;
+        let phone = client.phone;
+        if (!phone.startsWith('+')) {
+          phone = '+91' + phone;
+        }
+        const whatsappUrl = `whatsapp://send?phone=${phone}&text=${encodeURIComponent(message)}`;
+        window.open(whatsappUrl, '_blank');
+      }
       setFormData({
         clientId: "",
         settlementId: "",

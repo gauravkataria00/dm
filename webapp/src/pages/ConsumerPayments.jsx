@@ -61,6 +61,16 @@ const ConsumerPayments = () => {
       };
 
       await createConsumerPayment(paymentData);
+      const consumer = consumers.find(c => c.id === formData.consumer_id);
+      if (consumer && consumer.phone) {
+        const message = `Payment of ₹${formData.amount} received on ${formData.payment_date}. Notes: ${formData.notes || 'None'}`;
+        let phone = consumer.phone;
+        if (!phone.startsWith('+')) {
+          phone = '+91' + phone;
+        }
+        const whatsappUrl = `whatsapp://send?phone=${phone}&text=${encodeURIComponent(message)}`;
+        window.open(whatsappUrl, '_blank');
+      }
       await loadData();
       setShowForm(false);
       setFormData({
