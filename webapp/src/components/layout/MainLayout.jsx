@@ -72,12 +72,17 @@ export default function MainLayout({ children }) {
 
       <div className="w-full flex-1 flex flex-col">
         <header className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white flex items-center justify-between px-4 py-3 shadow-md">
-          <button
-            className="md:hidden text-2xl text-white"
-            onClick={() => setSidebarOpen(true)}
-          >
-            ☰
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              className="md:hidden text-2xl text-white"
+              onClick={() => setSidebarOpen(true)}
+            >
+              ☰
+            </button>
+            <Link to="/" className="text-2xl text-white hover:text-blue-200 transition">
+              🏠
+            </Link>
+          </div>
 
           <h1 className="font-semibold text-lg sm:text-xl">
             🐄 Dairy Manager Pro

@@ -8,6 +8,7 @@ const ConsumerPayments = () => {
   const [showForm, setShowForm] = useState(false);
   const [selectedConsumer, setSelectedConsumer] = useState(null);
   const [consumerSummary, setConsumerSummary] = useState(null);
+  const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
     consumer_id: "",
     amount: "",
@@ -23,6 +24,7 @@ const ConsumerPayments = () => {
   const loadData = async () => {
     try {
       setLoading(true);
+      setError(null);
       const [paymentsData, consumersData] = await Promise.all([
         getConsumerPayments(),
         getConsumers(),
@@ -31,6 +33,7 @@ const ConsumerPayments = () => {
       setConsumers(consumersData);
     } catch (error) {
       console.error("Error loading data:", error);
+      setError("Failed to load data. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -110,6 +113,20 @@ const ConsumerPayments = () => {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-red-500 mb-4">{error}</div>
+        <button
+          onClick={loadData}
+          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+        >
+          Retry
+        </button>
       </div>
     );
   }

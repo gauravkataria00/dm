@@ -8,6 +8,7 @@ export default function Payments() {
   const [settlements, setSettlements] = useState([]);
   const [clientSummaries, setClientSummaries] = useState({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
   const [formData, setFormData] = useState({
@@ -25,6 +26,7 @@ export default function Payments() {
 
   const loadData = async () => {
     try {
+      setError(null);
       const [paymentsData, clientsData, settlementsData] = await Promise.all([
         getPayments(),
         getClients(),
@@ -47,6 +49,7 @@ export default function Payments() {
       setClientSummaries(summaries);
     } catch (error) {
       console.error("Error loading data:", error);
+      setError("Failed to load data. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -113,6 +116,22 @@ export default function Payments() {
     return (
       <MainLayout>
         <div className="p-8 text-center text-gray-500">Loading payments...</div>
+      </MainLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="p-8 text-center">
+          <div className="text-red-500 mb-4">{error}</div>
+          <button
+            onClick={loadData}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+          >
+            Retry
+          </button>
+        </div>
       </MainLayout>
     );
   }
