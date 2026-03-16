@@ -36,7 +36,7 @@ export default function MainLayout({ children }) {
   ];
 
   return (
-    <div className="flex min-h-screen bg-gray-50 overflow-x-hidden">
+    <div className="flex min-h-screen bg-green-50 overflow-x-hidden">
       <aside
         className={`fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform transition-transform duration-300 z-40 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -52,7 +52,7 @@ export default function MainLayout({ children }) {
               }}
               className={`block px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
                 location.pathname === item.path
-                  ? "bg-blue-600 text-white shadow-md"
+                  ? "bg-green-600 text-white shadow-md"
                   : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
               }`}
             >
@@ -71,7 +71,7 @@ export default function MainLayout({ children }) {
       )}
 
       <div className="w-full flex-1 flex flex-col">
-        <header className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white flex items-center justify-between px-4 py-3 shadow-md">
+        <header className="bg-gradient-to-r from-green-600 to-emerald-600 text-white flex items-center justify-between px-4 py-3 shadow-md">
           <div className="flex items-center gap-4">
             <button
               className="md:hidden text-2xl text-white"

@@ -91,7 +91,7 @@ export default function AddMilk() {
             <select
               value={selectedClientId}
               onChange={(e) => setSelectedClientId(e.target.value)}
-              className="w-full border border-gray-200 bg-white rounded-xl px-4 py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-200 bg-white rounded-xl px-4 py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             >
               {clients.map((client) => (
                 <option key={client.id} value={client.id}>
@@ -107,7 +107,7 @@ export default function AddMilk() {
                 onClick={() => setType("cow")}
                 className={`flex-1 text-center px-4 py-2 rounded-xl font-semibold transition ${
                   type === "cow"
-                    ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md"
+                    ? "bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md"
                     : "bg-gray-100 text-gray-800 hover:bg-gray-200"
                 }`}
               >
@@ -119,7 +119,7 @@ export default function AddMilk() {
                 onClick={() => setType("buffalo")}
                 className={`flex-1 text-center px-4 py-2 rounded-xl font-semibold transition ${
                   type === "buffalo"
-                    ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md"
+                    ? "bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md"
                     : "bg-gray-100 text-gray-800 hover:bg-gray-200"
                 }`}
               >
@@ -133,7 +133,7 @@ export default function AddMilk() {
               placeholder="Litres"
               value={litres}
               onChange={(e) => setLitres(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
 
             <input
@@ -141,7 +141,7 @@ export default function AddMilk() {
               placeholder="Fat %"
               value={fat}
               onChange={(e) => setFat(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
 
             <input
@@ -149,7 +149,7 @@ export default function AddMilk() {
               placeholder="SNF %"
               value={snf}
               onChange={(e) => setSnf(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
 
             {/* Calculation */}
@@ -162,7 +162,7 @@ export default function AddMilk() {
               type="button"
               onClick={handleSave}
               disabled={isSubmitting}
-              className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition disabled:opacity-50"
+              className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition disabled:opacity-50"
             >
               {isSubmitting ? "Saving..." : "Save Entry"}
             </button>

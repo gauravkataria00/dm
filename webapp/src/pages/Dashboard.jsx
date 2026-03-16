@@ -465,7 +465,7 @@ export default function Dashboard() {
       <MainLayout>
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Loading your dashboard...</p>
           </div>
         </div>
@@ -492,7 +492,7 @@ export default function Dashboard() {
           <div className="flex-shrink-0">
             <button
               onClick={loadDashboardData}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition flex items-center space-x-2"
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition flex items-center space-x-2"
             >
               <span>🔄</span>
               <span>Refresh</span>
@@ -750,7 +750,7 @@ export default function Dashboard() {
 
 // Reusable Components
 const MetricCard = ({ title, value, subtitle, icon, color, trend }) => (
-  <div className="bg-white rounded-2xl shadow-sm ring-1 ring-black/10 hover:shadow-lg hover:ring-blue-200 transition-shadow duration-200 p-4 sm:p-6 relative flex flex-col justify-between">
+  <div className="bg-white rounded-2xl shadow-sm ring-1 ring-black/10 hover:shadow-lg hover:ring-green-200 transition-shadow duration-200 p-4 sm:p-6 relative flex flex-col justify-between">
     <div className="flex justify-between items-start">
       <h3 className="text-sm font-semibold text-gray-600">
         {title}

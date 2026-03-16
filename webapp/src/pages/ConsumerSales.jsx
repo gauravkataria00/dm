@@ -98,7 +98,7 @@ const ConsumerSales = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
       </div>
     );
   }
@@ -109,7 +109,7 @@ const ConsumerSales = () => {
         <h1 className="text-3xl font-bold text-gray-900">Consumer Sales</h1>
         <button
           onClick={() => setShowForm(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
         >
           Record Sale
         </button>
@@ -128,7 +128,7 @@ const ConsumerSales = () => {
                   required
                   value={formData.consumer_id}
                   onChange={(e) => setFormData({ ...formData, consumer_id: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
                   <option value="">Select Consumer</option>
                   {consumers.map((consumer) => (
@@ -147,7 +147,7 @@ const ConsumerSales = () => {
                   required
                   value={formData.sale_date}
                   onChange={(e) => setFormData({ ...formData, sale_date: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
               </div>
               <div>
@@ -161,7 +161,7 @@ const ConsumerSales = () => {
                   required
                   value={formData.quantity}
                   onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
               </div>
               <div>
@@ -175,7 +175,7 @@ const ConsumerSales = () => {
                   required
                   value={formData.price_per_liter}
                   onChange={(e) => setFormData({ ...formData, price_per_liter: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
               </div>
               <div>
@@ -196,7 +196,7 @@ const ConsumerSales = () => {
                 <select
                   value={formData.payment_status}
                   onChange={(e) => setFormData({ ...formData, payment_status: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
                   <option value="pending">Pending</option>
                   <option value="paid">Paid</option>
@@ -214,7 +214,7 @@ const ConsumerSales = () => {
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
               >
                 Record Sale
               </button>
