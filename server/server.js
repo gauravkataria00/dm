@@ -225,7 +225,7 @@ if (process.env.DB_TYPE === 'mongodb') {
 app.post("/api/auth/login", (req, res) => {
   const { email, password } = req.body;
 
-  if (email === "Himanshu@admin.com" && password === "password") {
+  if (email === "Himanshu@admin.com" && password === "no password") {
     return res.json({
       success: true,
       token: "admin-demo-token"
