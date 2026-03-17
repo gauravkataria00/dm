@@ -5,42 +5,70 @@ const ConsumerSale = require("../models/ConsumerSale");
 // Get all consumer sales
 router.get("/", async (req, res) => {
   try {
-    const sales = await ConsumerSale.find().populate('consumerId', 'name').sort({ createdAt: -1 });
-    res.json(sales.map(sale => ({
+    let sales = await ConsumerSale.find()
+      .populate('consumerId', 'name phone')
+      .sort({ createdAt: -1 });
+    
+    // Remove broken references
+    sales = sales.filter(sale => sale.consumerId !== null);
+    
+    // Safe response format
+    const data = sales.map(sale => ({
       id: sale._id,
-      consumerId: sale.consumerId._id,
-      consumerName: sale.consumerId.name,
+      _id: sale._id,
       type: sale.type,
       litres: sale.litres,
       rate: sale.rate,
       total: sale.total,
       payment_status: sale.payment_status,
       sale_date: sale.sale_date,
-      createdAt: sale.createdAt
-    })));
+      createdAt: sale.createdAt,
+      consumer: {
+        name: sale.consumerId?.name || "Unknown",
+        phone: sale.consumerId?.phone || "N/A"
+      },
+      consumerName: sale.consumerId?.name || "Unknown" // backward compatibility
+    }));
+    
+    res.json(data);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Consumer sales GET error:", error.message);
+    res.json([]); // never crash
   }
 });
 
 // Get sales for a specific consumer
 router.get("/consumer/:consumerId", async (req, res) => {
   try {
-    const sales = await ConsumerSale.find({ consumerId: req.params.consumerId }).populate('consumerId', 'name').sort({ createdAt: -1 });
-    res.json(sales.map(sale => ({
+    let sales = await ConsumerSale.find({ consumerId: req.params.consumerId })
+      .populate('consumerId', 'name phone')
+      .sort({ createdAt: -1 });
+    
+    // Remove broken references
+    sales = sales.filter(sale => sale.consumerId !== null);
+    
+    // Safe response format
+    const data = sales.map(sale => ({
       id: sale._id,
-      consumerId: sale.consumerId._id,
-      consumerName: sale.consumerId.name,
+      _id: sale._id,
       type: sale.type,
       litres: sale.litres,
       rate: sale.rate,
       total: sale.total,
       payment_status: sale.payment_status,
       sale_date: sale.sale_date,
-      createdAt: sale.createdAt
-    })));
+      createdAt: sale.createdAt,
+      consumer: {
+        name: sale.consumerId?.name || "Unknown",
+        phone: sale.consumerId?.phone || "N/A"
+      },
+      consumerName: sale.consumerId?.name || "Unknown" // backward compatibility
+    }));
+    
+    res.json(data);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Consumer sales GET/consumer error:", error.message);
+    res.json([]); // never crash
   }
 });
 
@@ -52,24 +80,37 @@ router.get("/today", async (req, res) => {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const sales = await ConsumerSale.find({
+    let sales = await ConsumerSale.find({
       createdAt: { $gte: today, $lt: tomorrow }
-    }).populate('consumerId', 'name').sort({ createdAt: -1 });
+    })
+      .populate('consumerId', 'name phone')
+      .sort({ createdAt: -1 });
 
-    res.json(sales.map(sale => ({
+    // Remove broken references
+    sales = sales.filter(sale => sale.consumerId !== null);
+    
+    // Safe response format
+    const data = sales.map(sale => ({
       id: sale._id,
-      consumerId: sale.consumerId._id,
-      consumerName: sale.consumerId.name,
+      _id: sale._id,
       type: sale.type,
       litres: sale.litres,
       rate: sale.rate,
       total: sale.total,
       payment_status: sale.payment_status,
       sale_date: sale.sale_date,
-      createdAt: sale.createdAt
-    })));
+      createdAt: sale.createdAt,
+      consumer: {
+        name: sale.consumerId?.name || "Unknown",
+        phone: sale.consumerId?.phone || "N/A"
+      },
+      consumerName: sale.consumerId?.name || "Unknown" // backward compatibility
+    }));
+
+    res.json(data);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Consumer sales GET/today error:", error.message);
+    res.json([]); // never crash
   }
 });
 
@@ -80,6 +121,14 @@ router.post("/", async (req, res) => {
 
     if (!consumer_id || !quantity || !price_per_liter || !total_amount) {
       return res.status(400).json({ error: "consumer_id, quantity, price_per_liter, and total_amount are required" });
+    }
+
+    // Validate that consumer exists before saving
+    const Consumer = require("../models/Consumer");
+    const consumer = await Consumer.findById(consumer_id);
+    if (!consumer) {
+      console.error(`Invalid consumer_id: ${consumer_id}`);
+      return res.status(400).json({ error: "Invalid consumer" });
     }
 
     const sale = new ConsumerSale({
@@ -93,21 +142,26 @@ router.post("/", async (req, res) => {
     });
 
     await sale.save();
-    await sale.populate('consumerId', 'name');
+    await sale.populate('consumerId', 'name phone');
 
     res.json({
       id: sale._id,
-      consumerId: sale.consumerId._id,
-      consumerName: sale.consumerId.name,
+      _id: sale._id,
       type: sale.type,
       litres: sale.litres,
       rate: sale.rate,
       total: sale.total,
       payment_status: sale.payment_status,
       sale_date: sale.sale_date,
-      createdAt: sale.createdAt
+      createdAt: sale.createdAt,
+      consumer: {
+        name: sale.consumerId?.name || "Unknown",
+        phone: sale.consumerId?.phone || "N/A"
+      },
+      consumerName: sale.consumerId?.name || "Unknown" // backward compatibility
     });
   } catch (error) {
+    console.error("Consumer sale POST error:", error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -126,8 +180,10 @@ router.put("/:id/status", async (req, res) => {
       return res.status(404).json({ error: "Sale not found" });
     }
 
+    console.log(`Sale ${req.params.id} payment status updated to: ${payment_status}`);
     res.json({ message: "Sale status updated successfully" });
   } catch (error) {
+    console.error("Consumer sale PUT error:", error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -180,7 +236,15 @@ router.get("/summary/range", async (req, res) => {
 
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Consumer sales summary error:", error.message);
+    res.json({
+      totalSales: 0,
+      totalLitres: 0,
+      totalRevenue: 0,
+      pendingAmount: 0,
+      paidAmount: 0,
+      error: error.message
+    });
   }
 });
 

@@ -17,9 +17,11 @@ export default function Ledger() {
           getMilkEntries(),
           getClients()
         ]);
+        console.log("API RESPONSE entries:", entriesData);
         setEntries(entriesData);
         setClients(clientsData);
-      } catch {
+      } catch (err) {
+        console.error("LOAD ERROR:", err);
         push("Failed to load data", "error");
       } finally {
         setLoading(false);
@@ -100,10 +102,15 @@ Dairy Manager Pro`;
       <div className="bg-white dark:bg-gray-900 text-black dark:text-white rounded-xl shadow-md overflow-hidden">
         {loading ? (
           <div className="p-8 text-center text-gray-500">Loading ledger...</div>
-        ) : entries.length === 0 ? (
+        ) : !Array.isArray(entries) || entries.length === 0 ? (
           <div className="p-8 text-center text-gray-500">No milk entries found</div>
         ) : (
           <>
+            <div className="p-4">
+              <pre style={{ color: "white", fontSize: 12, maxHeight: 200, overflow: "auto" }}>
+                {JSON.stringify(entries, null, 2)}
+              </pre>
+            </div>
             {/* Mobile cards */}
             <div className="space-y-4 md:hidden">
               {entries.map((entry) => (

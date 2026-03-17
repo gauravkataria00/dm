@@ -8,14 +8,18 @@ const Settlement = require("../models/Settlement");
 // Get all payments with client and settlement info
 router.get("/", async (req, res) => {
   try {
-    const payments = await Payment.find()
-      .populate('clientId', 'name')
+    let payments = await Payment.find()
+      .populate('clientId', 'name phone')
       .populate('settlementId', 'startDate endDate')
       .sort({ createdAt: -1 });
-    res.json(payments.map(payment => ({
+    
+    // Remove broken references
+    payments = payments.filter(payment => payment.clientId !== null);
+    
+    // Safe response format
+    const data = payments.map(payment => ({
       id: payment._id,
-      clientId: payment.clientId._id,
-      clientName: payment.clientId.name,
+      _id: payment._id,
       settlementId: payment.settlementId?._id,
       startDate: payment.settlementId?.startDate,
       endDate: payment.settlementId?.endDate,
@@ -23,24 +27,36 @@ router.get("/", async (req, res) => {
       type: payment.type,
       date: payment.date,
       notes: payment.notes,
-      createdAt: payment.createdAt
-    })));
+      createdAt: payment.createdAt,
+      client: {
+        name: payment.clientId?.name || "Unknown",
+        phone: payment.clientId?.phone || "N/A"
+      },
+      clientName: payment.clientId?.name || "Unknown" // backward compatibility
+    }));
+    
+    res.json(data);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Payments GET error:", error.message);
+    res.json([]); // never crash
   }
 });
 
 // Get payments for a specific client
 router.get("/client/:clientId", async (req, res) => {
   try {
-    const payments = await Payment.find({ clientId: req.params.clientId })
-      .populate('clientId', 'name')
+    let payments = await Payment.find({ clientId: req.params.clientId })
+      .populate('clientId', 'name phone')
       .populate('settlementId', 'startDate endDate')
       .sort({ createdAt: -1 });
-    res.json(payments.map(payment => ({
+    
+    // Remove broken references
+    payments = payments.filter(payment => payment.clientId !== null);
+    
+    // Safe response format
+    const data = payments.map(payment => ({
       id: payment._id,
-      clientId: payment.clientId._id,
-      clientName: payment.clientId.name,
+      _id: payment._id,
       settlementId: payment.settlementId?._id,
       startDate: payment.settlementId?.startDate,
       endDate: payment.settlementId?.endDate,
@@ -48,10 +64,18 @@ router.get("/client/:clientId", async (req, res) => {
       type: payment.type,
       date: payment.date,
       notes: payment.notes,
-      createdAt: payment.createdAt
-    })));
+      createdAt: payment.createdAt,
+      client: {
+        name: payment.clientId?.name || "Unknown",
+        phone: payment.clientId?.phone || "N/A"
+      },
+      clientName: payment.clientId?.name || "Unknown" // backward compatibility
+    }));
+    
+    res.json(data);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Payments GET/client error:", error.message);
+    res.json([]); // never crash
   }
 });
 
@@ -64,16 +88,23 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "clientId, amount, type, and date are required" });
     }
 
+    // Validate that client exists before saving
+    const Client = require("../models/Client");
+    const client = await Client.findById(clientId);
+    if (!client) {
+      console.error(`Invalid clientId: ${clientId}`);
+      return res.status(400).json({ error: "Invalid client" });
+    }
+
     const payment = new Payment({ clientId, settlementId, amount, type, date, notes });
     await payment.save();
 
-    await payment.populate('clientId', 'name');
+    await payment.populate('clientId', 'name phone');
     await payment.populate('settlementId', 'startDate endDate');
 
     res.json({
       id: payment._id,
-      clientId: payment.clientId._id,
-      clientName: payment.clientId.name,
+      _id: payment._id,
       settlementId: payment.settlementId?._id,
       startDate: payment.settlementId?.startDate,
       endDate: payment.settlementId?.endDate,
@@ -81,9 +112,15 @@ router.post("/", async (req, res) => {
       type: payment.type,
       date: payment.date,
       notes: payment.notes,
-      createdAt: payment.createdAt
+      createdAt: payment.createdAt,
+      client: {
+        name: payment.clientId?.name || "Unknown",
+        phone: payment.clientId?.phone || "N/A"
+      },
+      clientName: payment.clientId?.name || "Unknown" // backward compatibility
     });
   } catch (error) {
+    console.error("Payment POST error:", error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -92,26 +129,27 @@ router.post("/", async (req, res) => {
 router.get("/summary/:clientId", async (req, res) => {
   try {
     const clientId = req.params.clientId;
+    const mongoose = require('mongoose');
 
     const [totalEarned, totalPaid, advancesGiven, advancesRepaid, pendingSettlements] = await Promise.all([
       MilkEntry.aggregate([
-        { $match: { clientId: require('mongoose').Types.ObjectId(clientId) } },
+        { $match: { clientId: new mongoose.Types.ObjectId(clientId) } },
         { $group: { _id: null, amount: { $sum: "$total" } } }
       ]),
       Payment.aggregate([
-        { $match: { clientId: require('mongoose').Types.ObjectId(clientId), type: { $in: ['settlement_payment', 'advance_repaid'] } } },
+        { $match: { clientId: new mongoose.Types.ObjectId(clientId), type: { $in: ['settlement_payment', 'advance_repaid'] } } },
         { $group: { _id: null, amount: { $sum: "$amount" } } }
       ]),
       Advance.aggregate([
-        { $match: { clientId: require('mongoose').Types.ObjectId(clientId), status: 'active' } },
+        { $match: { clientId: new mongoose.Types.ObjectId(clientId), status: 'active' } },
         { $group: { _id: null, amount: { $sum: "$amount" } } }
       ]),
       Payment.aggregate([
-        { $match: { clientId: require('mongoose').Types.ObjectId(clientId), type: 'advance_repaid' } },
+        { $match: { clientId: new mongoose.Types.ObjectId(clientId), type: 'advance_repaid' } },
         { $group: { _id: null, amount: { $sum: "$amount" } } }
       ]),
       Settlement.aggregate([
-        { $match: { clientId: require('mongoose').Types.ObjectId(clientId), status: 'pending' } },
+        { $match: { clientId: new mongoose.Types.ObjectId(clientId), status: 'pending' } },
         { $group: { _id: null, amount: { $sum: "$totalAmount" } } }
       ])
     ]);
@@ -135,7 +173,18 @@ router.get("/summary/:clientId", async (req, res) => {
       status: netOutstanding > 0 ? 'owed_to_client' : netOutstanding < 0 ? 'client_owes' : 'settled'
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Payment summary error:", error.message);
+    res.json({
+      clientId: req.params.clientId,
+      totalEarned: 0,
+      totalPaid: 0,
+      advancesGiven: 0,
+      advancesRepaid: 0,
+      pendingSettlements: 0,
+      netOutstanding: 0,
+      status: 'error',
+      error: error.message
+    });
   }
 });
 

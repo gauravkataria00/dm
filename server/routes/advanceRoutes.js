@@ -5,38 +5,66 @@ const Advance = require("../models/Advance");
 // Get all advances with client names
 router.get("/", async (req, res) => {
   try {
-    const advances = await Advance.find().populate('clientId', 'name').sort({ createdAt: -1 });
-    res.json(advances.map(advance => ({
+    let advances = await Advance.find()
+      .populate('clientId', 'name phone')
+      .sort({ createdAt: -1 });
+    
+    // Remove broken references
+    advances = advances.filter(advance => advance.clientId !== null);
+    
+    // Safe response format
+    const data = advances.map(advance => ({
       id: advance._id,
-      clientId: advance.clientId._id,
-      clientName: advance.clientId.name,
+      _id: advance._id,
       amount: advance.amount,
       date: advance.date,
       purpose: advance.purpose,
       status: advance.status,
-      createdAt: advance.createdAt
-    })));
+      createdAt: advance.createdAt,
+      client: {
+        name: advance.clientId?.name || "Unknown",
+        phone: advance.clientId?.phone || "N/A"
+      },
+      clientName: advance.clientId?.name || "Unknown" // backward compatibility
+    }));
+    
+    res.json(data);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Advances GET error:", error.message);
+    res.json([]); // never crash
   }
 });
 
 // Get advances for a specific client
 router.get("/client/:clientId", async (req, res) => {
   try {
-    const advances = await Advance.find({ clientId: req.params.clientId }).populate('clientId', 'name').sort({ createdAt: -1 });
-    res.json(advances.map(advance => ({
+    let advances = await Advance.find({ clientId: req.params.clientId })
+      .populate('clientId', 'name phone')
+      .sort({ createdAt: -1 });
+    
+    // Remove broken references
+    advances = advances.filter(advance => advance.clientId !== null);
+    
+    // Safe response format
+    const data = advances.map(advance => ({
       id: advance._id,
-      clientId: advance.clientId._id,
-      clientName: advance.clientId.name,
+      _id: advance._id,
       amount: advance.amount,
       date: advance.date,
       purpose: advance.purpose,
       status: advance.status,
-      createdAt: advance.createdAt
-    })));
+      createdAt: advance.createdAt,
+      client: {
+        name: advance.clientId?.name || "Unknown",
+        phone: advance.clientId?.phone || "N/A"
+      },
+      clientName: advance.clientId?.name || "Unknown" // backward compatibility
+    }));
+    
+    res.json(data);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Advances GET/client error:", error.message);
+    res.json([]); // never crash
   }
 });
 
@@ -49,21 +77,34 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "clientId, amount, and date are required" });
     }
 
+    // Validate that client exists before saving
+    const Client = require("../models/Client");
+    const client = await Client.findById(clientId);
+    if (!client) {
+      console.error(`Invalid clientId: ${clientId}`);
+      return res.status(400).json({ error: "Invalid client" });
+    }
+
     const advance = new Advance({ clientId, amount, date, purpose, status: 'active' });
     await advance.save();
-    await advance.populate('clientId', 'name');
+    await advance.populate('clientId', 'name phone');
 
     res.json({
       id: advance._id,
-      clientId: advance.clientId._id,
-      clientName: advance.clientId.name,
+      _id: advance._id,
       amount: advance.amount,
       date: advance.date,
       purpose: advance.purpose,
       status: advance.status,
-      createdAt: advance.createdAt
+      createdAt: advance.createdAt,
+      client: {
+        name: advance.clientId?.name || "Unknown",
+        phone: advance.clientId?.phone || "N/A"
+      },
+      clientName: advance.clientId?.name || "Unknown" // backward compatibility
     });
   } catch (error) {
+    console.error("Advance POST error:", error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -82,8 +123,10 @@ router.put("/:id", async (req, res) => {
       return res.status(404).json({ error: "Advance not found" });
     }
 
+    console.log(`Advance ${req.params.id} updated to status: ${status}`);
     res.json({ message: "Advance updated successfully" });
   } catch (error) {
+    console.error("Advance PUT error:", error.message);
     res.status(500).json({ error: error.message });
   }
 });

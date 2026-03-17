@@ -5,38 +5,66 @@ const ConsumerPayment = require("../models/ConsumerPayment");
 // Get all consumer payments
 router.get("/", async (req, res) => {
   try {
-    const payments = await ConsumerPayment.find().populate('consumerId', 'name').sort({ createdAt: -1 });
-    res.json(payments.map(payment => ({
+    let payments = await ConsumerPayment.find()
+      .populate('consumerId', 'name phone')
+      .sort({ createdAt: -1 });
+    
+    // Remove broken references
+    payments = payments.filter(payment => payment.consumerId !== null);
+    
+    // Safe response format
+    const data = payments.map(payment => ({
       id: payment._id,
-      consumerId: payment.consumerId._id,
-      consumerName: payment.consumerId.name,
+      _id: payment._id,
       amount: payment.amount,
       date: payment.date,
       payment_method: payment.payment_method,
       notes: payment.notes,
-      createdAt: payment.createdAt
-    })));
+      createdAt: payment.createdAt,
+      consumer: {
+        name: payment.consumerId?.name || "Unknown",
+        phone: payment.consumerId?.phone || "N/A"
+      },
+      consumerName: payment.consumerId?.name || "Unknown" // backward compatibility
+    }));
+    
+    res.json(data);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Consumer payments GET error:", error.message);
+    res.json([]); // never crash
   }
 });
 
 // Get payments for a specific consumer
 router.get("/consumer/:consumerId", async (req, res) => {
   try {
-    const payments = await ConsumerPayment.find({ consumerId: req.params.consumerId }).populate('consumerId', 'name').sort({ createdAt: -1 });
-    res.json(payments.map(payment => ({
+    let payments = await ConsumerPayment.find({ consumerId: req.params.consumerId })
+      .populate('consumerId', 'name phone')
+      .sort({ createdAt: -1 });
+    
+    // Remove broken references
+    payments = payments.filter(payment => payment.consumerId !== null);
+    
+    // Safe response format
+    const data = payments.map(payment => ({
       id: payment._id,
-      consumerId: payment.consumerId._id,
-      consumerName: payment.consumerId.name,
+      _id: payment._id,
       amount: payment.amount,
       date: payment.date,
       payment_method: payment.payment_method,
       notes: payment.notes,
-      createdAt: payment.createdAt
-    })));
+      createdAt: payment.createdAt,
+      consumer: {
+        name: payment.consumerId?.name || "Unknown",
+        phone: payment.consumerId?.phone || "N/A"
+      },
+      consumerName: payment.consumerId?.name || "Unknown" // backward compatibility
+    }));
+    
+    res.json(data);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Consumer payments GET/consumer error:", error.message);
+    res.json([]); // never crash
   }
 });
 
@@ -49,6 +77,14 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "consumer_id, amount, and payment_date are required" });
     }
 
+    // Validate that consumer exists before saving
+    const Consumer = require("../models/Consumer");
+    const consumer = await Consumer.findById(consumer_id);
+    if (!consumer) {
+      console.error(`Invalid consumer_id: ${consumer_id}`);
+      return res.status(400).json({ error: "Invalid consumer" });
+    }
+
     const payment = new ConsumerPayment({
       consumerId: consumer_id,
       amount,
@@ -58,19 +94,24 @@ router.post("/", async (req, res) => {
     });
 
     await payment.save();
-    await payment.populate('consumerId', 'name');
+    await payment.populate('consumerId', 'name phone');
 
     res.json({
       id: payment._id,
-      consumerId: payment.consumerId._id,
-      consumerName: payment.consumerId.name,
+      _id: payment._id,
       amount: payment.amount,
       date: payment.date,
       payment_method: payment.payment_method,
       notes: payment.notes,
-      createdAt: payment.createdAt
+      createdAt: payment.createdAt,
+      consumer: {
+        name: payment.consumerId?.name || "Unknown",
+        phone: payment.consumerId?.phone || "N/A"
+      },
+      consumerName: payment.consumerId?.name || "Unknown" // backward compatibility
     });
   } catch (error) {
+    console.error("Consumer payment POST error:", error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -78,8 +119,9 @@ router.post("/", async (req, res) => {
 // Get payment summary for a consumer
 router.get("/summary/:consumerId", async (req, res) => {
   try {
+    const mongoose = require('mongoose');
     const summary = await ConsumerPayment.aggregate([
-      { $match: { consumerId: require('mongoose').Types.ObjectId(req.params.consumerId) } },
+      { $match: { consumerId: new mongoose.Types.ObjectId(req.params.consumerId) } },
       {
         $group: {
           _id: null,
@@ -98,7 +140,13 @@ router.get("/summary/:consumerId", async (req, res) => {
 
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Consumer payment summary error:", error.message);
+    res.json({
+      totalPayments: 0,
+      totalPaid: 0,
+      lastPaymentDate: null,
+      error: error.message
+    });
   }
 });
 
