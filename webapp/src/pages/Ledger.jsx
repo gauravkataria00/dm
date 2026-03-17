@@ -78,8 +78,8 @@ Dairy Manager Pro`;
   return (
     <MainLayout>
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-800">Milk Ledger</h1>
-        <p className="text-gray-600 mt-2">View all milk entries with customer details.</p>
+        <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Milk Ledger</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-2">View all milk entries with customer details.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -97,7 +97,7 @@ Dairy Manager Pro`;
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm ring-1 ring-black/10 overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 text-black dark:text-white rounded-xl shadow-md overflow-hidden">
         {loading ? (
           <div className="p-8 text-center text-gray-500">Loading ledger...</div>
         ) : entries.length === 0 ? (

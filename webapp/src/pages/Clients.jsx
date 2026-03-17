@@ -94,15 +94,15 @@ export default function Clients() {
   return (
     <MainLayout>
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-800">Clients Management</h1>
-        <p className="text-gray-600 mt-2">Manage your dairy clients and suppliers here.</p>
+        <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Clients Management</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-2">Manage your dairy clients and suppliers here.</p>
       </div>
 
       {error && <div className="mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded">❌ {error}</div>}
       {success && <div className="mb-4 p-4 bg-green-100 border-l-4 border-green-500 text-green-700 rounded">✅ {success}</div>}
 
-      <div className="bg-white rounded-2xl shadow-sm ring-1 ring-black/10 p-6 mb-8">
-        <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-4">➕ Add New Client</h2>
+      <div className="bg-white dark:bg-gray-900 text-black dark:text-white rounded-xl shadow-md p-6 mb-8">
+        <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white mb-4">➕ Add New Client</h2>
         <form onSubmit={handleAddClient} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <input
@@ -110,14 +110,14 @@ export default function Clients() {
               placeholder="Client Name"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
+              className="px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
             />
             <input
               type="tel"
               placeholder="Phone Number"
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
+              className="px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
             />
           </div>
           <button
@@ -136,11 +136,11 @@ export default function Clients() {
           placeholder="🔍 Search by name or phone..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
         />
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm ring-1 ring-black/10 overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 text-black dark:text-white rounded-xl shadow-md overflow-hidden">
         {loading ? (
           <div className="p-8 text-center text-gray-500">Loading clients...</div>
         ) : filteredClients.length === 0 ? (

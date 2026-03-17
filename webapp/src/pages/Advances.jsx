@@ -87,8 +87,8 @@ export default function Advances() {
       <div className="mb-8">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-4xl font-bold text-gray-800">Advances</h1>
-            <p className="text-gray-600 mt-2">Manage advances given to clients</p>
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Advances</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">Manage advances given to clients</p>
           </div>
           <button
             onClick={() => setShowCreateForm(true)}
@@ -100,29 +100,29 @@ export default function Advances() {
       </div>
 
       {/* Summary Card */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+      <div className="bg-white dark:bg-gray-900 text-black dark:text-white rounded-xl shadow-md p-6 mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-gray-800">Active Advances Summary</h2>
-            <p className="text-gray-600">Total outstanding advances to clients</p>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Active Advances Summary</h2>
+            <p className="text-gray-600 dark:text-gray-400">Total outstanding advances to clients</p>
           </div>
           <div className="text-right">
-            <div className="text-3xl font-bold text-blue-600">₹{getActiveAdvancesTotal().toFixed(2)}</div>
-            <div className="text-sm text-gray-500">Active Advances</div>
+            <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">₹{getActiveAdvancesTotal().toFixed(2)}</div>
+            <div className="text-sm text-gray-500 dark:text-gray-500">Active Advances</div>
           </div>
         </div>
       </div>
 
       {showCreateForm && (
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Give New Advance</h2>
+        <div className="bg-white dark:bg-gray-900 text-black dark:text-white rounded-xl shadow-md p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Give New Advance</h2>
           <form onSubmit={handleCreateAdvance} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Client</label>
+              <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">Client</label>
               <select
                 value={formData.clientId}
                 onChange={(e) => setFormData({...formData, clientId: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded-md"
+                className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
                 required
               >
                 <option value="">Select Client</option>
@@ -132,34 +132,34 @@ export default function Advances() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Amount (₹)</label>
+              <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">Amount (₹)</label>
               <input
                 type="number"
                 step="0.01"
                 value={formData.amount}
                 onChange={(e) => setFormData({...formData, amount: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded-md"
+                className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
                 placeholder="Enter amount"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+              <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">Date</label>
               <input
                 type="date"
                 value={formData.date}
                 onChange={(e) => setFormData({...formData, date: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded-md"
+                className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Purpose</label>
+              <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">Purpose</label>
               <input
                 type="text"
                 value={formData.purpose}
                 onChange={(e) => setFormData({...formData, purpose: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded-md"
+                className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
                 placeholder="e.g., Medical emergency, Farm expenses"
               />
             </div>
@@ -182,9 +182,9 @@ export default function Advances() {
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-800">Advance History</h2>
+      <div className="bg-white dark:bg-gray-900 text-black dark:text-white rounded-xl shadow-md overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Advance History</h2>
         </div>
         <div className="overflow-x-auto w-full">
           <table className="min-w-full divide-y divide-gray-200">

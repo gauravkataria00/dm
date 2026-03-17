@@ -141,8 +141,8 @@ export default function Payments() {
       <div className="mb-8">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-4xl font-bold text-gray-800">Payments</h1>
-            <p className="text-gray-600 mt-2">Track all payment transactions and client balances</p>
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Payments</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">Track all payment transactions and client balances</p>
           </div>
           <button
             onClick={() => setShowCreateForm(true)}
@@ -158,29 +158,29 @@ export default function Payments() {
         {clients.map(client => {
           const summary = getClientSummary(client.id);
           return (
-            <div key={client.id} className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-lg font-bold text-gray-800 mb-2">{client.name}</h3>
+            <div key={client.id} className="bg-white dark:bg-gray-900 text-black dark:text-white rounded-xl shadow-md p-6">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{client.name}</h3>
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Total Earned:</span>
-                  <span className="font-medium">₹{summary.totalEarned?.toFixed(2) || '0.00'}</span>
+                  <span className="text-gray-600 dark:text-gray-400">Total Earned:</span>
+                  <span className="font-medium text-gray-900 dark:text-white">₹{summary.totalEarned?.toFixed(2) || '0.00'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Total Paid:</span>
-                  <span className="font-medium">₹{summary.totalPaid?.toFixed(2) || '0.00'}</span>
+                  <span className="text-gray-600 dark:text-gray-400">Total Paid:</span>
+                  <span className="font-medium text-gray-900 dark:text-white">₹{summary.totalPaid?.toFixed(2) || '0.00'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Advances:</span>
-                  <span className="font-medium">₹{summary.advancesGiven?.toFixed(2) || '0.00'}</span>
+                  <span className="text-gray-600 dark:text-gray-400">Advances:</span>
+                  <span className="font-medium text-gray-900 dark:text-white">₹{summary.advancesGiven?.toFixed(2) || '0.00'}</span>
                 </div>
-                <hr className="my-2" />
+                <hr className="my-2 border-gray-300 dark:border-gray-600" />
                 <div className="flex justify-between font-bold">
-                  <span>Net Balance:</span>
-                  <span className={summary.netOutstanding > 0 ? 'text-green-600' : summary.netOutstanding < 0 ? 'text-red-600' : 'text-gray-600'}>
+                  <span className="text-gray-900 dark:text-white">Net Balance:</span>
+                  <span className={summary.netOutstanding > 0 ? 'text-green-600 dark:text-green-400' : summary.netOutstanding < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}>
                     ₹{summary.netOutstanding?.toFixed(2) || '0.00'}
                   </span>
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
                   {summary.status === 'owed_to_client' ? '💰 Amount to pay client' :
                    summary.status === 'client_owes' ? '📉 Client owes money' :
                    '✅ Settled'}
@@ -192,15 +192,15 @@ export default function Payments() {
       </div>
 
       {showCreateForm && (
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Record New Payment</h2>
+        <div className="bg-white dark:bg-gray-900 text-black dark:text-white rounded-xl shadow-md p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Record New Payment</h2>
           <form onSubmit={handleCreatePayment} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Client</label>
+              <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">Client</label>
               <select
                 value={formData.clientId}
                 onChange={(e) => setFormData({...formData, clientId: e.target.value, settlementId: ""})}
-                className="w-full p-2 border border-gray-300 rounded-md"
+                className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
                 required
               >
                 <option value="">Select Client</option>
@@ -210,11 +210,11 @@ export default function Payments() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Payment Type</label>
+              <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">Payment Type</label>
               <select
                 value={formData.type}
                 onChange={(e) => setFormData({...formData, type: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded-md"
+                className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
                 required
               >
                 <option value="settlement_payment">Settlement Payment</option>
@@ -224,11 +224,11 @@ export default function Payments() {
             </div>
             {formData.type === 'settlement_payment' && formData.clientId && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Settlement</label>
+                <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">Settlement</label>
                 <select
                   value={formData.settlementId}
                   onChange={(e) => setFormData({...formData, settlementId: e.target.value})}
-                  className="w-full p-2 border border-gray-300 rounded-md"
+                  className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
                 >
                   <option value="">Select Settlement (Optional)</option>
                   {settlements.filter(s => s.clientId == formData.clientId && s.status === 'pending').map(settlement => (
@@ -240,32 +240,32 @@ export default function Payments() {
               </div>
             )}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Amount (₹)</label>
+              <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">Amount (₹)</label>
               <input
                 type="number"
                 step="0.01"
                 value={formData.amount}
                 onChange={(e) => setFormData({...formData, amount: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded-md"
+                className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+              <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">Date</label>
               <input
                 type="date"
                 value={formData.date}
                 onChange={(e) => setFormData({...formData, date: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded-md"
+                className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
                 required
               />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+              <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">Notes</label>
               <textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded-md"
+                className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
                 rows="3"
                 placeholder="Optional notes..."
               />
@@ -289,9 +289,9 @@ export default function Payments() {
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-800">Payment History</h2>
+      <div className="bg-white dark:bg-gray-900 text-black dark:text-white rounded-xl shadow-md overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Payment History</h2>
         </div>
         <div className="overflow-x-auto w-full">
           <table className="min-w-full divide-y divide-gray-200">

@@ -61,7 +61,7 @@ const Inventory = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Milk Inventory</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Milk Inventory</h1>
         <button
           onClick={handleCalculateToday}
           disabled={calculating}
@@ -74,29 +74,29 @@ const Inventory = () => {
       {/* Today's Summary */}
       {todayInventory && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-sm font-medium text-gray-500 mb-2">Opening Stock</h3>
-            <p className="text-2xl font-bold text-gray-900">{todayInventory.opening_stock?.toFixed(2)} L</p>
+          <div className="bg-white dark:bg-gray-900 text-black dark:text-white p-6 rounded-xl shadow-md">
+            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Opening Stock</h3>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{todayInventory.opening_stock?.toFixed(2)} L</p>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-sm font-medium text-gray-500 mb-2">Milk Received</h3>
-            <p className="text-2xl font-bold text-green-600">+{todayInventory.milk_received?.toFixed(2)} L</p>
+          <div className="bg-white dark:bg-gray-900 text-black dark:text-white p-6 rounded-xl shadow-md">
+            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Milk Received</h3>
+            <p className="text-2xl font-bold text-green-600 dark:text-green-400">+{todayInventory.milk_received?.toFixed(2)} L</p>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-sm font-medium text-gray-500 mb-2">Milk Sold</h3>
-            <p className="text-2xl font-bold text-red-600">-{todayInventory.milk_sold?.toFixed(2)} L</p>
+          <div className="bg-white dark:bg-gray-900 text-black dark:text-white p-6 rounded-xl shadow-md">
+            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Milk Sold</h3>
+            <p className="text-2xl font-bold text-red-600 dark:text-red-400">-{todayInventory.milk_sold?.toFixed(2)} L</p>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-sm font-medium text-gray-500 mb-2">Closing Stock</h3>
-            <p className="text-2xl font-bold text-blue-600">{todayInventory.closing_stock?.toFixed(2)} L</p>
+          <div className="bg-white dark:bg-gray-900 text-black dark:text-white p-6 rounded-xl shadow-md">
+            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Closing Stock</h3>
+            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{todayInventory.closing_stock?.toFixed(2)} L</p>
           </div>
         </div>
       )}
 
       {/* Inventory History */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Inventory History</h2>
+      <div className="bg-white dark:bg-gray-900 text-black dark:text-white rounded-xl shadow-md overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Inventory History</h2>
         </div>
         <div className="overflow-x-auto w-full">
           <table className="min-w-full divide-y divide-gray-200">

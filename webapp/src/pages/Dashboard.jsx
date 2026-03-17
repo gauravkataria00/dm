@@ -8,9 +8,6 @@ import {
   getPayments,
   getAdvances,
   getClientPaymentSummary,
-  getConsumers,
-  getConsumerSales,
-  getConsumerPayments,
   getTodayInventory
 } from "../services/api";
 
@@ -28,11 +25,6 @@ export default function Dashboard() {
       pendingSettlements: 0,
       activeAdvances: 0,
       totalOutstanding: 0,
-      totalConsumers: 0,
-      totalConsumerSalesToday: 0,
-      totalConsumerSalesThisMonth: 0,
-      totalConsumerRevenueToday: 0,
-      totalConsumerRevenueThisMonth: 0,
       currentInventory: 0
     },
     recentActivities: [],
@@ -48,12 +40,6 @@ export default function Dashboard() {
   const getMilkRevenue = (entry) => {
     const litres = parseFloat(entry?.litres) || 0;
     const rate = parseFloat(entry?.rate) || 0;
-    return litres * rate;
-  };
-
-  const getConsumerRevenue = (sale) => {
-    const litres = parseFloat(sale?.litres) || 0;
-    const rate = parseFloat(sale?.rate) || 0;
     return litres * rate;
   };
 
@@ -91,9 +77,6 @@ export default function Dashboard() {
       let settlements = [];
       let payments = [];
       let advances = [];
-      let consumers = [];
-      let consumerSales = [];
-      let consumerPayments = [];
       let todayInventory = {};
 
       try {
@@ -137,30 +120,6 @@ export default function Dashboard() {
       }
 
       try {
-        consumers = await getConsumers();
-        console.log("Consumers loaded:", consumers.length);
-      } catch (err) {
-        console.warn("Failed to load consumers:", err);
-        consumers = [];
-      }
-
-      try {
-        consumerSales = await getConsumerSales();
-        console.log("Consumer sales loaded:", consumerSales.length);
-      } catch (err) {
-        console.warn("Failed to load consumer sales:", err);
-        consumerSales = [];
-      }
-
-      try {
-        consumerPayments = await getConsumerPayments();
-        console.log("Consumer payments loaded:", consumerPayments.length);
-      } catch (err) {
-        console.warn("Failed to load consumer payments:", err);
-        consumerPayments = [];
-      }
-
-      try {
         todayInventory = await getTodayInventory();
         console.log("Today inventory loaded:", todayInventory);
       } catch (err) {
@@ -182,13 +141,6 @@ export default function Dashboard() {
         entry.createdAt && entry.createdAt.startsWith(thisMonth)
       );
 
-      const todayConsumerSales = consumerSales.filter(sale =>
-        sale.sale_date === today
-      );
-      const thisMonthConsumerSales = consumerSales.filter(sale =>
-        sale.sale_date && sale.sale_date.startsWith(thisMonth)
-      );
-
       // Calculate basic stats
       const stats = {
         totalClients: clients.length,
@@ -202,16 +154,11 @@ export default function Dashboard() {
         pendingSettlements: settlements.filter(s => s.status === 'pending').length,
         activeAdvances: advances.filter(a => a.status === 'active').length,
         totalOutstanding: 0, // Will calculate below
-        totalConsumers: consumers.length,
-        totalConsumerSalesToday: todayConsumerSales.reduce((sum, sale) => sum + (sale.litres || 0), 0),
-        totalConsumerSalesThisMonth: thisMonthConsumerSales.reduce((sum, sale) => sum + (sale.litres || 0), 0),
-        totalConsumerRevenueToday: todayConsumerSales.reduce((sum, sale) => sum + getConsumerRevenue(sale), 0),
-        totalConsumerRevenueThisMonth: thisMonthConsumerSales.reduce((sum, sale) => sum + getConsumerRevenue(sale), 0),
         currentInventory: todayInventory.cow || 0
       };
 
       // Calculate financial summary
-      const totalEarned = stats.totalRevenueThisMonth + stats.totalConsumerRevenueThisMonth;
+      const totalEarned = stats.totalRevenueThisMonth;
       const totalPaid = payments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
       const totalAdvancesGiven = advances.reduce((sum, advance) => sum + (advance.amount || 0), 0);
       const netBalance = totalEarned - totalPaid - totalAdvancesGiven;
@@ -228,7 +175,7 @@ export default function Dashboard() {
 
       // Generate recent activities
       const recentActivities = generateRecentActivities(
-        milkEntries, settlements, payments, advances, clients, consumerSales, consumerPayments, consumers
+        milkEntries, settlements, payments, advances, clients
       );
 
       // Calculate top clients
@@ -263,11 +210,6 @@ export default function Dashboard() {
           pendingSettlements: 0,
           activeAdvances: 0,
           totalOutstanding: 0,
-          totalConsumers: 0,
-          totalConsumerSalesToday: 0,
-          totalConsumerSalesThisMonth: 0,
-          totalConsumerRevenueToday: 0,
-          totalConsumerRevenueThisMonth: 0,
           currentInventory: 0
         },
         recentActivities: [],
@@ -285,15 +227,13 @@ export default function Dashboard() {
     }
   };
 
-  const generateRecentActivities = (milkEntries, settlements, payments, advances, clients, consumerSales, consumerPayments, consumers) => {
+  const generateRecentActivities = (milkEntries, settlements, payments, advances, clients) => {
     const activities = [];
 
     const latestClients = sortLatest(clients).slice(0, 10);
     const latestMilkEntries = sortLatest(milkEntries).slice(0, 10);
     const latestPayments = sortLatest(payments, (p) => new Date(p.createdAt || p.date || 0).getTime()).slice(0, 10);
     const latestSettlements = sortLatest(settlements).slice(0, 10);
-    const latestConsumerSales = sortLatest(consumerSales, (s) => new Date(s.createdAt || s.sale_date || 0).getTime()).slice(0, 10);
-    const latestConsumerPayments = sortLatest(consumerPayments).slice(0, 10);
 
     // Add recent clients (new client additions)
     latestClients.forEach(client => {
@@ -351,36 +291,6 @@ export default function Dashboard() {
         timestamp: new Date(getTimestamp(settlement)),
         icon: '📋',
         color: settlement.status === 'completed' ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600'
-      });
-    });
-
-    // Add recent consumer sales
-    latestConsumerSales.forEach(sale => {
-      const consumer = consumers.find(c => c.id === sale.consumerId);
-      activities.push({
-        id: `consumer-sale-${sale.id}`,
-        type: 'consumer_sale',
-        title: 'Consumer sale recorded',
-        subtitle: `${sale.litres}L milk sold to ${consumer?.name || 'Unknown'}`,
-        amount: `₹${getConsumerRevenue(sale).toFixed(0)}`,
-        timestamp: new Date(getTimestamp(sale)),
-        icon: '🛒',
-        color: 'bg-orange-100 text-orange-600'
-      });
-    });
-
-    // Add recent consumer payments
-    latestConsumerPayments.forEach(payment => {
-      const consumer = consumers.find(c => c.id === payment.consumerId);
-      activities.push({
-        id: `consumer-payment-${payment.id}`,
-        type: 'consumer_payment',
-        title: 'Consumer payment received',
-        subtitle: `Payment from ${consumer?.name || 'Unknown'}`,
-        amount: `₹${parseFloat(payment.amount || 0).toFixed(0)}`,
-        timestamp: new Date(getTimestamp(payment)),
-        icon: '💸',
-        color: 'bg-green-100 text-green-600'
       });
     });
 
@@ -463,10 +373,10 @@ export default function Dashboard() {
   if (loading) {
     return (
       <MainLayout>
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 transition-all duration-300">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading your dashboard...</p>
+            <p className="text-gray-600 dark:text-gray-300">Loading your dashboard...</p>
           </div>
         </div>
       </MainLayout>
@@ -477,22 +387,22 @@ export default function Dashboard() {
 
   return (
     <MainLayout>
-      <div className="px-4 sm:px-6 lg:px-8 py-6">
+      <div className="px-4 sm:px-6 lg:px-8 py-6 transition-all duration-300">
         {/* Header */}
         <div className="mb-10">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            <h1 className="text-4xl font-bold text-black dark:text-white mb-2 transition-all duration-300">
               🏪 Dairy Analytics Dashboard
             </h1>
-            <p className="text-gray-600 text-lg">
+            <p className="text-gray-600 dark:text-gray-300 text-lg transition-all duration-300">
               Welcome back! Here's your comprehensive dairy farm overview for {new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
             </p>
           </div>
           <div className="flex-shrink-0">
             <button
               onClick={loadDashboardData}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition flex items-center space-x-2"
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center space-x-2"
             >
               <span>🔄</span>
               <span>Refresh</span>
@@ -537,32 +447,8 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Consumer Metrics */}
+      {/* Inventory Status */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <MetricCard
-          title="Total Consumers"
-          value={stats.totalConsumers}
-          subtitle="Registered customers"
-          icon="🛒"
-          color="from-indigo-500 to-indigo-600"
-          trend="+5%"
-        />
-        <MetricCard
-          title="Today's Sales"
-          value={`${stats.totalConsumerSalesToday.toFixed(1)}L`}
-          subtitle={`${stats.totalConsumerRevenueToday.toFixed(0)} revenue`}
-          icon="🛍️"
-          color="from-teal-500 to-teal-600"
-          trend="+10%"
-        />
-        <MetricCard
-          title="Monthly Consumer Revenue"
-          value={`₹${stats.totalConsumerRevenueThisMonth.toFixed(0)}`}
-          subtitle={`${stats.totalConsumerSalesThisMonth.toFixed(1)}L sold`}
-          icon="💸"
-          color="from-cyan-500 to-cyan-600"
-          trend="+18%"
-        />
         <MetricCard
           title="Current Inventory"
           value={`${stats.currentInventory.toFixed(1)}L`}
@@ -576,8 +462,8 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
         {/* Financial Overview */}
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
-            <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-100 dark:border-gray-700 transition-all duration-300">
+            <h3 className="text-xl font-bold text-black dark:text-white mb-6 flex items-center transition-all duration-300">
               <span className="text-2xl mr-3">💼</span>
               Financial Overview
             </h3>
@@ -610,8 +496,8 @@ export default function Dashboard() {
 
         {/* Monthly Trends Chart */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
-            <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-100 dark:border-gray-700 transition-all duration-300">
+            <h3 className="text-xl font-bold text-black dark:text-white mb-6 flex items-center transition-all duration-300">
               <span className="text-2xl mr-3">📈</span>
               Last 7 Days Trend
             </h3>
@@ -641,8 +527,8 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
         {/* Top Clients */}
-        <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
-          <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-100 dark:border-gray-700 transition-all duration-300">
+          <h3 className="text-xl font-bold text-black dark:text-white mb-6 flex items-center transition-all duration-300">
             <span className="text-2xl mr-3">🏆</span>
             Top Clients This Month
           </h3>
@@ -678,30 +564,30 @@ export default function Dashboard() {
         </div>
 
         {/* Recent Activities */}
-        <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
-          <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-100 dark:border-gray-700 transition-all duration-300">
+          <h3 className="text-xl font-bold text-black dark:text-white mb-6 flex items-center transition-all duration-300">
             <span className="text-2xl mr-3">⚡</span>
             Recent Activities
           </h3>
           <div className="space-y-4 max-h-80 overflow-y-auto">
             {recentActivities.length > 0 ? recentActivities.map((activity) => (
-              <div key={activity.id} className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+              <div key={activity.id} className="flex items-start space-x-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-all duration-300">
                 <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl ${activity.color}`}>
                   {activity.icon}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-black dark:text-white transition-all duration-300">
                       {activity.title}
                     </p>
-                    <span className="text-sm font-bold text-gray-900">{activity.amount}</span>
+                    <span className="text-sm font-bold text-black dark:text-white transition-all duration-300">{activity.amount}</span>
                   </div>
-                  <p className="text-sm text-gray-600">{activity.subtitle}</p>
-                  <p className="text-xs text-gray-500 mt-2">{activity.time}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 transition-all duration-300">{activity.subtitle}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 transition-all duration-300">{activity.time}</p>
                 </div>
               </div>
             )) : (
-              <div className="text-center py-12 text-gray-500">
+              <div className="text-center py-12 text-gray-500 dark:text-gray-400 transition-all duration-300">
                 <div className="text-4xl mb-3">📋</div>
                 <p>No recent activities</p>
               </div>
@@ -750,9 +636,9 @@ export default function Dashboard() {
 
 // Reusable Components
 const MetricCard = ({ title, value, subtitle, icon, color, trend }) => (
-  <div className="bg-white rounded-2xl shadow-sm ring-1 ring-black/10 hover:shadow-lg hover:ring-green-200 transition-shadow duration-200 p-4 sm:p-6 relative flex flex-col justify-between">
+  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm ring-1 ring-black/10 dark:ring-gray-700 hover:shadow-lg hover:ring-green-200 dark:hover:ring-green-300 transition-all duration-300 p-4 sm:p-6 relative flex flex-col justify-between">
     <div className="flex justify-between items-start">
-      <h3 className="text-sm font-semibold text-gray-600">
+      <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-300 transition-all duration-300">
         {title}
       </h3>
       <div className="text-2xl sm:text-3xl opacity-25">
@@ -760,10 +646,10 @@ const MetricCard = ({ title, value, subtitle, icon, color, trend }) => (
       </div>
     </div>
     <div className="mt-4">
-      <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
+      <h2 className="text-2xl sm:text-3xl font-extrabold text-black dark:text-white transition-all duration-300">
         {value}
       </h2>
-      <p className="text-sm text-gray-500 mt-1">
+      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 transition-all duration-300">
         {subtitle}
       </p>
     </div>
@@ -772,8 +658,8 @@ const MetricCard = ({ title, value, subtitle, icon, color, trend }) => (
 
 const FinancialItem = ({ label, value, color, prefix = "" }) => (
   <div className="flex justify-between items-center">
-    <span className="text-gray-600">{label}</span>
-    <span className={`font-bold ${color}`}>{prefix}₹{value.toFixed(0)}</span>
+    <span className="text-gray-600 dark:text-gray-300 transition-all duration-300">{label}</span>
+    <span className={`font-bold ${color} transition-all duration-300`}>{prefix}₹{value.toFixed(0)}</span>
   </div>
 );
 

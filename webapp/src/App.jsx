@@ -3,9 +3,11 @@ import { ToastProvider } from "./context/ToastContext";
 
 function App() {
   return (
-    <ToastProvider>
-      <AppRoutes />
-    </ToastProvider>
+    <div className="bg-gray-50 dark:bg-gray-950 min-h-screen text-black dark:text-white">
+      <ToastProvider>
+        <AppRoutes />
+      </ToastProvider>
+    </div>
   );
 }
 

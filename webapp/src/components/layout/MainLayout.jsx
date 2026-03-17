@@ -24,21 +24,17 @@ export default function MainLayout({ children }) {
     { path: "/clients", label: "Clients", icon: "👥" },
     { path: "/add-milk", label: "Add Milk Entry", icon: "🥛" },
     { path: "/ledger", label: "Ledger", icon: "📋" },
-    { path: "/settlements", label: "Settlements", icon: "💰" },
     { path: "/payments", label: "Payments", icon: "💳" },
     { path: "/advances", label: "Advances", icon: "💵" },
-    { path: "/consumers", label: "Consumers", icon: "🛒" },
-    { path: "/consumer-sales", label: "Consumer Sales", icon: "🛍️" },
-    { path: "/consumer-payments", label: "Consumer Payments", icon: "💸" },
     { path: "/inventory", label: "Inventory", icon: "📦" },
     { path: "/reports", label: "Reports", icon: "📈" },
     { path: "/settings", label: "Settings", icon: "⚙️" },
   ];
 
   return (
-    <div className="flex min-h-screen bg-green-50 overflow-x-hidden">
+    <div className="flex min-h-screen transition-all duration-300 overflow-x-hidden">
       <aside
-        className={`fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform transition-transform duration-300 z-40 ${
+        className={`fixed inset-y-0 left-0 w-64 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 z-40 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         } md:translate-x-0 md:static md:shadow-none`}
       >
@@ -50,10 +46,10 @@ export default function MainLayout({ children }) {
               onClick={() => {
                 if (window.innerWidth < 768) setSidebarOpen(false);
               }}
-              className={`block px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
+              className={`block px-4 py-3 rounded-xl font-medium transition-all duration-300 ${
                 location.pathname === item.path
                   ? "bg-green-600 text-white shadow-md"
-                  : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                  : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-black dark:hover:text-white"
               }`}
             >
               <span className="mr-3">{item.icon}</span>
@@ -71,7 +67,7 @@ export default function MainLayout({ children }) {
       )}
 
       <div className="w-full flex-1 flex flex-col">
-        <header className="bg-gradient-to-r from-green-600 to-emerald-600 text-white flex items-center justify-between px-4 py-3 shadow-md">
+        <header className="bg-green-600 dark:bg-gray-900 text-white flex items-center justify-between px-4 py-3 shadow-md border-b border-white/20 dark:border-gray-700 transition-all duration-300">
           <div className="flex items-center gap-4">
             <button
               className="md:hidden text-2xl text-white"
@@ -99,7 +95,7 @@ export default function MainLayout({ children }) {
           </button>
         </header>
 
-        <main className="flex-1 w-full p-4 sm:p-6 overflow-auto">
+        <main className="flex-1 w-full p-4 sm:p-6 overflow-auto transition-all duration-300">
           <div className="w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">{children}</div>
         </main>
       </div>

@@ -76,9 +76,9 @@ export default function AddMilk() {
 
   return (
     <MainLayout>
-      <h1 className="text-2xl font-bold mb-4">Add Milk Entry</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Add Milk Entry</h1>
 
-      <div className="bg-white rounded-2xl shadow-sm ring-1 ring-black/10 p-6 space-y-5">
+      <div className="bg-white dark:bg-gray-900 text-black dark:text-white rounded-xl shadow-md p-6 space-y-5">
         {loading ? (
           <div className="text-center text-gray-500">Loading customers...</div>
         ) : clients.length === 0 ? (
@@ -87,11 +87,11 @@ export default function AddMilk() {
           </div>
         ) : (
           <>
-            <label className="block text-sm font-semibold text-gray-700">Customer</label>
+            <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">Customer</label>
             <select
               value={selectedClientId}
               onChange={(e) => setSelectedClientId(e.target.value)}
-              className="w-full border border-gray-200 bg-white rounded-xl px-4 py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
             >
               {clients.map((client) => (
                 <option key={client.id} value={client.id}>
@@ -108,7 +108,7 @@ export default function AddMilk() {
                 className={`flex-1 text-center px-4 py-2 rounded-xl font-semibold transition ${
                   type === "cow"
                     ? "bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md"
-                    : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                    : "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
                 }`}
               >
                 Cow
@@ -120,7 +120,7 @@ export default function AddMilk() {
                 className={`flex-1 text-center px-4 py-2 rounded-xl font-semibold transition ${
                   type === "buffalo"
                     ? "bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md"
-                    : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                    : "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
                 }`}
               >
                 Buffalo
@@ -133,7 +133,7 @@ export default function AddMilk() {
               placeholder="Litres"
               value={litres}
               onChange={(e) => setLitres(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
             />
 
             <input
@@ -141,7 +141,7 @@ export default function AddMilk() {
               placeholder="Fat %"
               value={fat}
               onChange={(e) => setFat(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
             />
 
             <input
@@ -149,13 +149,13 @@ export default function AddMilk() {
               placeholder="SNF %"
               value={snf}
               onChange={(e) => setSnf(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
             />
 
             {/* Calculation */}
-            <div className="bg-gray-100 p-3 rounded">
-              <p>Rate: ₹ {rate.toFixed(2)}</p>
-              <p className="font-bold text-lg">Total: ₹ {total.toFixed(2)}</p>
+            <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg">
+              <p className="text-gray-800 dark:text-gray-200">Rate: ₹ {rate.toFixed(2)}</p>
+              <p className="font-bold text-lg text-gray-900 dark:text-white">Total: ₹ {total.toFixed(2)}</p>
             </div>
 
             <button
