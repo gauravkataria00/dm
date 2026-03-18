@@ -106,11 +106,7 @@ Dairy Manager Pro`;
           <div className="p-8 text-center text-gray-500">No milk entries found</div>
         ) : (
           <>
-            <div className="p-4">
-              <pre style={{ color: "white", fontSize: 12, maxHeight: 200, overflow: "auto" }}>
-                {JSON.stringify(entries, null, 2)}
-              </pre>
-            </div>
+            
             {/* Mobile cards */}
             <div className="space-y-4 md:hidden">
               {entries.map((entry) => (
