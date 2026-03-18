@@ -5,12 +5,30 @@ const API_BASE_URL_WITH_API = `${API_BASE_URL}/api`;
 // Get all clients
 export const getClients = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL_WITH_API}/clients`);
-    if (!response.ok) throw new Error("Failed to fetch clients");
-    return await response.json();
+    const url = `${API_BASE_URL_WITH_API}/clients`;
+    console.log("Fetching clients from:", url);
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      console.error("Response not ok. Status:", response.status, "StatusText:", response.statusText);
+      throw new Error(`Failed to fetch clients: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log("Clients API response:", data);
+    
+    // Ensure we always return an array
+    if (Array.isArray(data)) {
+      return data;
+    } else if (data && Array.isArray(data.data)) {
+      return data.data;
+    } else {
+      console.warn("Unexpected response format. Data:", data);
+      return [];
+    }
   } catch (error) {
     console.error("Error fetching clients:", error);
-    throw error;
+    return []; // Return empty array instead of throwing
   }
 };
 
@@ -75,12 +93,30 @@ export const deleteClient = async (id) => {
 // Milk entries
 export const getMilkEntries = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL_WITH_API}/milk`);
-    if (!response.ok) throw new Error("Failed to fetch milk entries");
-    return await response.json();
+    const url = `${API_BASE_URL_WITH_API}/milk`;
+    console.log("Fetching milk entries from:", url);
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      console.error("Response not ok. Status:", response.status, "StatusText:", response.statusText);
+      throw new Error(`Failed to fetch milk entries: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log("Milk entries API response:", data);
+    
+    // Ensure we always return an array
+    if (Array.isArray(data)) {
+      return data;
+    } else if (data && Array.isArray(data.data)) {
+      return data.data;
+    } else {
+      console.warn("Unexpected response format. Data:", data);
+      return [];
+    }
   } catch (error) {
     console.error("Error fetching milk entries:", error);
-    throw error;
+    return []; // Return empty array instead of throwing
   }
 };
 
@@ -204,12 +240,30 @@ export const getClientPaymentSummary = async (clientId) => {
 // Advances
 export const getAdvances = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL_WITH_API}/advances`);
-    if (!response.ok) throw new Error("Failed to fetch advances");
-    return await response.json();
+    const url = `${API_BASE_URL_WITH_API}/advances`;
+    console.log("Fetching advances from:", url);
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      console.error("Response not ok. Status:", response.status, "StatusText:", response.statusText);
+      throw new Error(`Failed to fetch advances: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log("Advances API response:", data);
+    
+    // Ensure we always return an array
+    if (Array.isArray(data)) {
+      return data;
+    } else if (data && Array.isArray(data.data)) {
+      return data.data;
+    } else {
+      console.warn("Unexpected response format. Data:", data);
+      return [];
+    }
   } catch (error) {
     console.error("Error fetching advances:", error);
-    throw error;
+    return []; // Return empty array instead of throwing
   }
 };
 

@@ -75,14 +75,9 @@ export default function MainLayout({ children }) {
             >
               ☰
             </button>
-            <Link to="/" className="text-2xl text-white hover:text-blue-200 transition">
-              🏠
-            </Link>
           </div>
 
-          <h1 className="font-semibold text-lg sm:text-xl">
-            🐄 Dairy Manager Pro
-          </h1>
+          <h1 className="font-semibold text-lg sm:text-xl">Dairy Manager Pro</h1>
 
           <button
             onClick={() => {

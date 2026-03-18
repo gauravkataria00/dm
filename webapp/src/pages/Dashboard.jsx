@@ -393,7 +393,7 @@ export default function Dashboard() {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
             <h1 className="text-4xl font-bold text-black dark:text-white mb-2 transition-all duration-300">
-              🏪 Dairy Analytics Dashboard
+              Dairy Analytics Dashboard
             </h1>
             <p className="text-gray-600 dark:text-gray-300 text-lg transition-all duration-300">
               Welcome back! Here's your comprehensive dairy farm overview for {new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
@@ -545,10 +545,10 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="w-20 bg-gray-200 rounded-full h-2 mb-1">
+                  <div className="w-20 bg-gray-200 rounded-full h-2 mb-1 overflow-hidden">
                     <div
                       className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${client.percentage}%` }}
+                      style={{ width: `${Math.min(client.percentage, 100)}%` }}
                     ></div>
                   </div>
                   <div className="text-xs text-gray-500">{client.percentage.toFixed(0)}%</div>

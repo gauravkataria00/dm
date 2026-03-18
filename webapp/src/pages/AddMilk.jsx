@@ -5,7 +5,10 @@ import { useToast } from "../context/ToastContext";
 
 export default function AddMilk() {
   const [clients, setClients] = useState([]);
+  const [filteredClients, setFilteredClients] = useState([]);
   const [selectedClientId, setSelectedClientId] = useState("");
+  const [search, setSearch] = useState("");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [litres, setLitres] = useState("");
   const [fat, setFat] = useState("");
   const [snf, setSnf] = useState("");
@@ -19,8 +22,12 @@ export default function AddMilk() {
     const loadClients = async () => {
       try {
         const data = await getClients();
-        setClients(data);
-        if (data.length > 0) setSelectedClientId(data[0].id);
+        setClients(data || []);
+        setFilteredClients(data || []);
+        if (Array.isArray(data) && data.length > 0) {
+          setSelectedClientId(data[0]?.id ?? "");
+          setSearch(`${data[0]?.name || ""} (${data[0]?.phone || "-"})`);
+        }
       } catch {
         push("Failed to load clients", "error");
       } finally {
@@ -30,6 +37,27 @@ export default function AddMilk() {
 
     loadClients();
   }, [push]);
+
+  useEffect(() => {
+    if (!Array.isArray(clients) || clients.length === 0) {
+      setFilteredClients([]);
+      return;
+    }
+
+    const term = (search || "").toString().trim().toLowerCase();
+    if (!term) {
+      setFilteredClients(clients);
+      return;
+    }
+
+    setFilteredClients(
+      clients.filter((client) => {
+        const name = (client?.name || "").toLowerCase();
+        const phone = (client?.phone || "").toLowerCase();
+        return name.includes(term) || phone.includes(term);
+      })
+    );
+  }, [clients, search]);
 
   const cowRate = parseFloat(localStorage.getItem("cowRate")) || 45;
   const buffaloRate = parseFloat(localStorage.getItem("buffaloRate")) || 55;
@@ -88,17 +116,43 @@ export default function AddMilk() {
         ) : (
           <>
             <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">Customer</label>
-            <select
-              value={selectedClientId}
-              onChange={(e) => setSelectedClientId(e.target.value)}
-              className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
-            >
-              {clients.map((client) => (
-                <option key={client.id} value={client.id}>
-                  {client.name} ({client.phone || "-"})
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setDropdownOpen(true);
+                }}
+                onFocus={() => setDropdownOpen(true)}
+                onBlur={() => setTimeout(() => setDropdownOpen(false), 150)}
+                placeholder="Search client..."
+                className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
+              />
+
+              {dropdownOpen && clients?.length > 0 && (
+                <div className="absolute z-20 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-auto">
+                  {filteredClients?.length === 0 ? (
+                    <div className="p-3 text-sm text-gray-500 dark:text-gray-400">No clients found</div>
+                  ) : (
+                    filteredClients.map((client) => (
+                      <button
+                        key={client?.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedClientId(client?.id ?? "");
+                          setSearch(`${client?.name || ""} (${client?.phone || "-"})`);
+                          setDropdownOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-3 text-sm text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
+                        {`${client?.name || "N/A"} (${client?.phone || "-"})`}
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Milk Type */}
             <div className="flex gap-3">
