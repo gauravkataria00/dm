@@ -13,6 +13,7 @@ export default function AddMilk() {
   const [fat, setFat] = useState("");
   const [snf, setSnf] = useState("");
   const [type, setType] = useState("cow");
+  const [shift, setShift] = useState("morning");
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -92,6 +93,7 @@ export default function AddMilk() {
         snf: Number(snf) || 0,
         rate,
         total,
+        shift, // ✅ NEW FIELD
       });
       push("Milk entry saved", "success");
       setLitres("");
@@ -188,6 +190,32 @@ export default function AddMilk() {
                 }`}
               >
                 Buffalo
+              </button>
+            </div>
+
+            {/* Shift Selection */}
+            <div className="flex gap-2 mt-2">
+              <button
+                type="button"
+                onClick={() => setShift("morning")}
+                className={`px-3 py-2 rounded font-semibold transition ${
+                  shift === "morning"
+                    ? "bg-yellow-400 text-black shadow-md"
+                    : "bg-gray-600 text-white hover:bg-gray-500"
+                }`}
+              >
+                🌅 Morning
+              </button>
+              <button
+                type="button"
+                onClick={() => setShift("evening")}
+                className={`px-3 py-2 rounded font-semibold transition ${
+                  shift === "evening"
+                    ? "bg-purple-500 text-white shadow-md"
+                    : "bg-gray-600 text-white hover:bg-gray-500"
+                }`}
+              >
+                🌙 Evening
               </button>
             </div>
 

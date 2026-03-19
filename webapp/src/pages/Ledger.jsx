@@ -159,6 +159,7 @@ export default function Ledger() {
 
 Client: ${entry?.clientName || "Unknown"}
 Date: ${formatDate(entry?.createdAt)}
+Shift: ${entry?.shift === "morning" ? "Morning 🌅" : "Evening 🌙"}
 
 Milk: ${formatNumber(entry?.litres)} L
 Fat: ${entry?.fat ?? "-"}
@@ -395,6 +396,9 @@ Dairy Manager Pro`;
                       {entry?.type || "Milk"} • {litres} L
                     </div>
                     <div className="text-xs text-gray-500">{formatDate(entry?.createdAt)}</div>
+                    <div className="text-xs text-gray-400">
+                      {entry?.shift === "morning" ? "🌅 Morning" : "🌙 Evening"}
+                    </div>
                   </div>
                 </div>
 
@@ -433,6 +437,7 @@ Dairy Manager Pro`;
             <thead className="bg-white/80 text-left text-sm font-semibold text-gray-700 backdrop-blur">
               <tr>
                 <th className="sticky top-0 z-10 bg-white/90 px-6 py-3">Customer</th>
+                <th className="sticky top-0 z-10 bg-white/90 px-6 py-3">Shift</th>
                 <th className="sticky top-0 z-10 bg-white/90 px-6 py-3">Type</th>
                 <th className="sticky top-0 z-10 bg-white/90 px-6 py-3">Litres</th>
                 <th className="sticky top-0 z-10 bg-white/90 px-6 py-3">Fat %</th>
@@ -456,6 +461,9 @@ Dairy Manager Pro`;
                   >
                     <td className="px-6 py-4 font-medium text-gray-800 dark:text-gray-100">
                       {entry?.clientName || "Unknown customer"}
+                    </td>
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300 capitalize">
+                      {entry?.shift === "morning" ? "🌅 Morning" : "🌙 Evening"}
                     </td>
                     <td className="px-6 py-4 text-gray-600 dark:text-gray-300 capitalize">{entry?.type || "Milk"}</td>
                     <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{litres} L</td>

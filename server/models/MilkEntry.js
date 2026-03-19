@@ -30,6 +30,11 @@ const milkEntrySchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  shift: {
+    type: String,
+    enum: ["morning", "evening"],
+    default: "morning",
+  },
   createdAt: {
     type: Date,
     default: Date.now,
