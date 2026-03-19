@@ -88,4 +88,32 @@ router.post("/", async (req, res) => {
   }
 });
 
+router.delete("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    console.log("DELETE request received for ID:", id);
+    
+    if (!id) {
+      console.warn("No ID provided");
+      return res.status(400).json({ error: "ID is required" });
+    }
+
+    console.log("Attempting to delete entry with ID:", id);
+    
+    const deletedEntry = await MilkEntry.findByIdAndDelete(id);
+    
+    if (!deletedEntry) {
+      console.warn("Entry not found for ID:", id);
+      return res.status(404).json({ error: "Entry not found" });
+    }
+
+    console.log("Entry deleted successfully:", id);
+    res.status(200).json({ message: "Entry deleted successfully", deletedEntry });
+  } catch (error) {
+    console.error("Milk DELETE error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

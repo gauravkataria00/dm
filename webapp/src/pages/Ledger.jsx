@@ -94,6 +94,7 @@ export default function Ledger() {
 
         setEntries(Array.isArray(entriesData) ? entriesData : []);
         setClients(Array.isArray(clientsData) ? clientsData : []);
+        console.log("Entries:", entries);
       } catch (err) {
         console.error("LOAD ERROR:", err);
         push("Failed to load ledger", "error");
@@ -208,6 +209,53 @@ Dairy Manager Pro`;
     const encodedMessage = encodeURIComponent(message);
     const url = `https://wa.me/${phone}?text=${encodedMessage}`;
     window.open(url, "_blank");
+  };
+
+  const handleDelete = async (entryId) => {
+    if (!entryId) {
+      console.warn("No entry ID");
+      return;
+    }
+
+    const confirmDelete = window.confirm("Are you sure you want to delete this entry?");
+    if (!confirmDelete) return;
+
+    try {
+      const API_URL = import.meta.env.VITE_API_URL;
+
+      console.log("Deleting ID:", entryId);
+      console.log("API URL:", API_URL);
+
+      const res = await fetch(`${API_URL}/api/milk/${entryId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+
+      console.log("Response status:", res.status);
+
+      const data = await res.json().catch(() => null);
+      console.log("Response data:", data);
+
+      if (!res.ok) {
+        alert("Delete failed. Check console.");
+        return;
+      }
+
+      // Update UI
+      setEntries(prev =>
+        Array.isArray(prev)
+          ? prev.filter(item => item?._id !== entryId)
+          : []
+      );
+
+      alert("Entry deleted successfully");
+
+    } catch (error) {
+      console.error("Delete error:", error);
+      alert("Server error while deleting");
+    }
   };
 
   const handleDownloadPdf = () => {
@@ -348,15 +396,6 @@ Dairy Manager Pro`;
                     </div>
                     <div className="text-xs text-gray-500">{formatDate(entry?.createdAt)}</div>
                   </div>
-
-                  <button
-                    onClick={() => handleSendWhatsApp(entry)}
-                    className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition duration-200 ease-in-out hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    aria-label="Send WhatsApp message"
-                  >
-                    <FaWhatsapp className="w-4 h-4" />
-                    <span>Send</span>
-                  </button>
                 </div>
 
                 <div className="mt-4 grid grid-cols-2 gap-2 text-sm text-gray-600">
@@ -364,6 +403,25 @@ Dairy Manager Pro`;
                   <div>SNF: {formatPercent(entry?.snf, 15)}</div>
                   <div>Rate: ₹{rate.toFixed(2)}</div>
                   <div className="font-semibold text-green-600">Total: ₹{total.toFixed(2)}</div>
+                </div>
+
+                <div className="flex justify-between gap-2 mt-4">
+                  <button
+                    onClick={() => handleSendWhatsApp(entry)}
+                    className="flex-1 inline-flex items-center justify-center gap-2 rounded bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 text-xs font-semibold shadow-sm transition duration-200"
+                    aria-label="Send WhatsApp message"
+                  >
+                    <FaWhatsapp className="w-4 h-4" />
+                    <span>Send</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleDelete(entry?._id)}
+                    className="flex-1 inline-flex items-center justify-center rounded bg-red-500 hover:bg-red-600 text-white px-3 py-2 text-xs font-semibold shadow-sm transition duration-200"
+                    aria-label="Delete entry"
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
             );
@@ -406,16 +464,19 @@ Dairy Manager Pro`;
                     <td className="px-6 py-4 text-gray-600 dark:text-gray-300">₹{rate.toFixed(2)}</td>
                     <td className="px-6 py-4 font-semibold text-green-600">₹{total.toFixed(2)}</td>
                     <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{formatDate(entry?.createdAt)}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 flex gap-2">{/* EXISTING SEND BUTTON (DO NOT REMOVE) */}
                       <button
-                        onClick={() => handleSendWhatsApp(entry)}
-                        className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition duration-200 ease-in-out hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                        aria-label="Send WhatsApp message"
+                        onClick={() => handleSendWhatsApp?.(entry)}
+                        className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded"
                       >
-                        <FaWhatsapp className="w-4 h-4" />
-                        <span className="hidden sm:inline">Send</span>
-                      </button>
-                    </td>
+                        Send
+                      </button>{/* NEW DELETE BUTTON */}
+                      <button
+                        onClick={() => handleDelete(entry?._id)}
+                        className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+                      >
+                        Delete
+                      </button></td>
                   </tr>
                 );
               })}
@@ -546,7 +607,7 @@ Dairy Manager Pro`;
               />
             </label>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <button
                 type="button"
                 onClick={() =>
@@ -561,6 +622,16 @@ Dairy Manager Pro`;
               >
                 Generate Report
               </button>
+
+              <button
+                type="button"
+                onClick={() => handleSendWhatsAppReport()}
+                className="inline-flex items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <FaWhatsapp className="w-4 h-4" />
+                Send WhatsApp
+              </button>
+
               <button
                 type="button"
                 onClick={() => {
