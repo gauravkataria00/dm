@@ -24,10 +24,6 @@ export default function AddMilk() {
         const data = await getClients();
         setClients(data || []);
         setFilteredClients(data || []);
-        if (Array.isArray(data) && data.length > 0) {
-          setSelectedClientId(data[0]?.id ?? "");
-          setSearch(`${data[0]?.name || ""} (${data[0]?.phone || "-"})`);
-        }
       } catch {
         push("Failed to load clients", "error");
       } finally {
@@ -37,6 +33,12 @@ export default function AddMilk() {
 
     loadClients();
   }, [push]);
+
+  // ✅ FORCE EMPTY STATE ON PAGE LOAD
+  useEffect(() => {
+    setSelectedClientId("");
+    setSearch("");
+  }, []);
 
   useEffect(() => {
     if (!Array.isArray(clients) || clients.length === 0) {
@@ -122,11 +124,12 @@ export default function AddMilk() {
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
+                  setSelectedClientId(""); // ✅ RESET ON TYPING
                   setDropdownOpen(true);
                 }}
                 onFocus={() => setDropdownOpen(true)}
                 onBlur={() => setTimeout(() => setDropdownOpen(false), 150)}
-                placeholder="Search client..."
+                placeholder="Search client by name / phone / SR No."
                 className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
               />
 
@@ -153,6 +156,13 @@ export default function AddMilk() {
                 </div>
               )}
             </div>
+
+            {/* Show Phone Only After Selection */}
+            {selectedClientId && (
+              <div className="mt-2 p-2 bg-gray-800 rounded text-sm text-gray-400">
+                📞 {clients.find(c => c?.id === selectedClientId)?.phone || "No phone"}
+              </div>
+            )}
 
             {/* Milk Type */}
             <div className="flex gap-3">

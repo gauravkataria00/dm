@@ -25,7 +25,7 @@ export default function Settings() {
         <p className="text-gray-600 dark:text-gray-400 mt-2">Configure your dairy management preferences.</p>
       </div>
 
-      <div className="space-y-6">
+      <div className="max-w-md mx-auto px-3 space-y-6">
         <div className="bg-white dark:bg-gray-900 text-black dark:text-white rounded-xl shadow-md p-6">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">🔔 Notifications</h2>
           <div className="space-y-3">
@@ -93,6 +93,28 @@ export default function Settings() {
                 placeholder="Enter owner name"
               />
             </div>
+          </div>
+        </div>
+
+        <div className="bg-gray-800 p-4 rounded-xl mt-4">
+          <h2 className="text-lg font-semibold mb-3">🛠 Help & Support</h2>
+          <p className="text-sm text-gray-400 mb-3">
+            Need help? Contact us on WhatsApp
+          </p>
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={() => window.open("https://wa.me/918059172716", "_blank")}
+              className="bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg"
+            >
+              Chat Support 1
+            </button>
+
+            <button
+              onClick={() => window.open("https://wa.me/918708195687", "_blank")}
+              className="bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg"
+            >
+              Chat Support 2
+            </button>
           </div>
         </div>
 
