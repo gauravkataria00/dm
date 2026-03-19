@@ -12,6 +12,7 @@ export default function AddMilk() {
   const [litres, setLitres] = useState("");
   const [fat, setFat] = useState("");
   const [snf, setSnf] = useState("");
+  const [rate, setRate] = useState("");
   const [type, setType] = useState("cow");
   const [shift, setShift] = useState("morning");
   const [loading, setLoading] = useState(true);
@@ -64,8 +65,7 @@ export default function AddMilk() {
 
   const cowRate = parseFloat(localStorage.getItem("cowRate")) || 45;
   const buffaloRate = parseFloat(localStorage.getItem("buffaloRate")) || 55;
-  const rate = type === "cow" ? cowRate : buffaloRate;
-  const total = litres && rate ? Number(litres) * rate : 0;
+  const total = Number(litres) * Number(rate || 0);
 
   const handleSave = async () => {
     if (!selectedClientId) {
@@ -78,20 +78,15 @@ export default function AddMilk() {
       return;
     }
 
-    if (!fat || Number(fat) <= 0) {
-      push("Enter a valid fat percentage", "error");
-      return;
-    }
-
     setIsSubmitting(true);
     try {
       await createMilkEntry({
         clientId: selectedClientId,
         type,
         litres: Number(litres),
-        fat: Number(fat),
+        fat: Number(fat) || 0,
         snf: Number(snf) || 0,
-        rate,
+        rate: Number(rate),
         total,
         shift, // ✅ NEW FIELD
       });
@@ -99,6 +94,7 @@ export default function AddMilk() {
       setLitres("");
       setFat("");
       setSnf("");
+      setRate("");
     } catch {
       push("Failed to save milk entry", "error");
     } finally {
@@ -244,9 +240,17 @@ export default function AddMilk() {
               className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
             />
 
+            <input
+              type="number"
+              placeholder="Enter Rate (₹/L)"
+              value={rate}
+              onChange={(e) => setRate(e.target.value)}
+              className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
+            />
+
             {/* Calculation */}
             <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg">
-              <p className="text-gray-800 dark:text-gray-200">Rate: ₹ {rate.toFixed(2)}</p>
+              <p className="text-gray-800 dark:text-gray-200">Rate: ₹ {Number(rate || 0).toFixed(2)}</p>
               <p className="font-bold text-lg text-gray-900 dark:text-white">Total: ₹ {total.toFixed(2)}</p>
             </div>
 
