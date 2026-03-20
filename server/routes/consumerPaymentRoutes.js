@@ -71,32 +71,39 @@ router.get("/consumer/:consumerId", async (req, res) => {
 // Create new consumer payment
 router.post("/", async (req, res) => {
   try {
-    const { consumer_id, amount, payment_date, payment_method, notes } = req.body;
+    // Support both field names for backwards compatibility
+    const { consumer_id, consumerId, amount, payment_date, date, payment_method, notes } = req.body;
+    const finalConsumerId = consumer_id || consumerId;
+    const finalDate = payment_date || date;
 
-    if (!consumer_id || !amount || !payment_date) {
-      return res.status(400).json({ error: "consumer_id, amount, and payment_date are required" });
+    if (!finalConsumerId || !amount || !finalDate) {
+      return res.status(400).json({ error: "consumerId, amount, and date are required" });
+    }
+
+    if (amount <= 0) {
+      return res.status(400).json({ error: "Amount must be greater than 0" });
     }
 
     // Validate that consumer exists before saving
     const Consumer = require("../models/Consumer");
-    const consumer = await Consumer.findById(consumer_id);
+    const consumer = await Consumer.findById(finalConsumerId);
     if (!consumer) {
-      console.error(`Invalid consumer_id: ${consumer_id}`);
-      return res.status(400).json({ error: "Invalid consumer" });
+      console.error(`Invalid consumer_id: ${finalConsumerId}`);
+      return res.status(400).json({ error: "Invalid consumer - consumer does not exist" });
     }
 
     const payment = new ConsumerPayment({
-      consumerId: consumer_id,
+      consumerId: finalConsumerId,
       amount,
-      date: payment_date,
+      date: new Date(finalDate),
       payment_method: payment_method || 'cash',
-      notes
+      notes: notes || ""
     });
 
     await payment.save();
     await payment.populate('consumerId', 'name phone');
 
-    res.json({
+    res.status(201).json({
       id: payment._id,
       _id: payment._id,
       amount: payment.amount,
@@ -108,11 +115,11 @@ router.post("/", async (req, res) => {
         name: payment.consumerId?.name || "Unknown",
         phone: payment.consumerId?.phone || "N/A"
       },
-      consumerName: payment.consumerId?.name || "Unknown" // backward compatibility
+      consumerName: payment.consumerId?.name || "Unknown"
     });
   } catch (error) {
     console.error("Consumer payment POST error:", error.message);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: "Failed to create consumer payment", details: error.message });
   }
 });
 

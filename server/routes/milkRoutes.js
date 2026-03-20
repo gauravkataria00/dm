@@ -3,70 +3,97 @@ const router = express.Router();
 const MilkEntry = require("../models/MilkEntry");
 const Client = require("../models/Client");
 
+// Get all milk entries with proper error handling
 router.get("/", async (req, res) => {
   try {
-    const milkEntries = await MilkEntry.find().sort({ createdAt: -1 });
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const clientId = req.query.clientId;
+    const skip = (page - 1) * limit;
 
-    // Gather client IDs (even if some are invalid/missing)
-    const mongoose = require('mongoose');
-    const clientIds = [...new Set(milkEntries
-      .map(entry => entry.clientId)
-      .filter(id => id && mongoose.Types.ObjectId.isValid(id))
-      .map(id => id.toString()))];
+    let query = {};
+    if (clientId) query.clientId = clientId;
 
-    const clients = await Client.find({ _id: { $in: clientIds } }).select('name phone');
-    const clientMap = clients.reduce((acc, client) => {
-      acc[client._id.toString()] = client;
-      return acc;
-    }, {});
+    const [milkEntries, total] = await Promise.all([
+      MilkEntry.find(query)
+        .populate('clientId', 'name phone')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      MilkEntry.countDocuments(query)
+    ]);
 
-    const data = milkEntries.map(entry => {
-      const client = clientMap[entry.clientId?.toString()];
-      return {
-        id: entry._id,
-        _id: entry._id,
-        clientId: entry.clientId ? entry.clientId.toString() : null,
-        litres: entry.litres,
-        fat: entry.fat,
-        snf: entry.snf,
-        rate: entry.rate,
-        total: entry.total,
-        type: entry.type,
-        createdAt: entry.createdAt,
-        client: {
-          name: client?.name || "Unknown",
-          phone: client?.phone || "N/A"
-        },
-        clientName: client?.name || "Unknown" // backward compatibility
-      };
+    const data = milkEntries.map(entry => ({
+      id: entry._id,
+      _id: entry._id,
+      clientId: entry.clientId?._id,
+      litres: entry.litres,
+      fat: entry.fat,
+      snf: entry.snf,
+      rate: entry.rate,
+      total: entry.total,
+      type: entry.type,
+      shift: entry.shift,
+      createdAt: entry.createdAt,
+      client: {
+        name: entry.clientId?.name || "Unknown",
+        phone: entry.clientId?.phone || "N/A"
+      },
+      clientName: entry.clientId?.name || "Unknown"
+    }));
+
+    res.json({
+      data,
+      pagination: {
+        total,
+        page,
+        limit,
+        pages: Math.ceil(total / limit)
+      }
     });
-
-    res.json(data);
   } catch (error) {
-    console.error("Milk GET error:", error);
-    // Return empty array even on failure to avoid 500 errors
-    res.status(200).json([]);
+    console.error("Milk GET error:", error.message);
+    res.status(500).json({ error: "Failed to fetch milk entries", details: error.message });
   }
 });
 
+// Create new milk entry
 router.post("/", async (req, res) => {
   try {
-    const { clientId, type, litres, fat, snf, rate, total } = req.body;
-    if (!clientId) return res.status(400).json({ error: "clientId is required" });
+    const { clientId, type, litres, fat, snf, rate, total, shift } = req.body;
 
-    // Validate that client exists before saving
+    // Validation
+    if (!clientId) return res.status(400).json({ error: "clientId is required" });
+    if (!litres || litres <= 0) return res.status(400).json({ error: "Litres must be greater than 0" });
+    if (fat === undefined || fat < 0 || fat > 8) return res.status(400).json({ error: "Fat must be between 0 and 8" });
+    if (snf === undefined || snf < 0 || snf > 10) return res.status(400).json({ error: "SNF must be between 0 and 10" });
+    if (!rate || rate < 0) return res.status(400).json({ error: "Rate must be provided and positive" });
+
+    // Validate client exists
     const client = await Client.findById(clientId);
     if (!client) {
-      console.error(`Invalid clientId: ${clientId}`);
-      return res.status(400).json({ error: "Invalid client" });
+      return res.status(400).json({ error: "Invalid client - client does not exist" });
     }
 
-    const milkEntry = new MilkEntry({ clientId, type, litres, fat, snf, rate, total });
-    await milkEntry.save();
+    // Calculate total if not provided
+    const calculatedTotal = litres * rate;
 
+    const milkEntry = new MilkEntry({
+      clientId,
+      type: type || "Standard",
+      litres,
+      fat,
+      snf,
+      rate,
+      total: total || calculatedTotal,
+      shift: shift || "morning"
+    });
+
+    await milkEntry.save();
     await milkEntry.populate('clientId', 'name phone');
-    
-    res.json({
+
+    res.status(201).json({
       id: milkEntry._id,
       _id: milkEntry._id,
       litres: milkEntry.litres,
@@ -75,44 +102,39 @@ router.post("/", async (req, res) => {
       rate: milkEntry.rate,
       total: milkEntry.total,
       type: milkEntry.type,
+      shift: milkEntry.shift,
       createdAt: milkEntry.createdAt,
       client: {
         name: milkEntry.clientId?.name || "Unknown",
         phone: milkEntry.clientId?.phone || "N/A"
       },
-      clientName: milkEntry.clientId?.name || "Unknown" // backward compatibility
+      clientName: milkEntry.clientId?.name || "Unknown"
     });
   } catch (error) {
     console.error("Milk POST error:", error.message);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: "Failed to create milk entry", details: error.message });
   }
 });
 
+// Delete milk entry
 router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    
-    console.log("DELETE request received for ID:", id);
-    
+
     if (!id) {
-      console.warn("No ID provided");
       return res.status(400).json({ error: "ID is required" });
     }
 
-    console.log("Attempting to delete entry with ID:", id);
-    
     const deletedEntry = await MilkEntry.findByIdAndDelete(id);
-    
+
     if (!deletedEntry) {
-      console.warn("Entry not found for ID:", id);
-      return res.status(404).json({ error: "Entry not found" });
+      return res.status(404).json({ error: "Milk entry not found" });
     }
 
-    console.log("Entry deleted successfully:", id);
-    res.status(200).json({ message: "Entry deleted successfully", deletedEntry });
+    res.status(200).json({ success: true, message: "Entry deleted successfully" });
   } catch (error) {
-    console.error("Milk DELETE error:", error);
-    res.status(500).json({ error: error.message });
+    console.error("Milk DELETE error:", error.message);
+    res.status(500).json({ error: "Failed to delete milk entry", details: error.message });
   }
 });
 

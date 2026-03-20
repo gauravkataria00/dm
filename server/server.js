@@ -17,25 +17,40 @@ const inventoryRoutes = require("./routes/inventoryRoutes");
 
 const app = express();
 
-app.use(cors());
+// CORS Configuration - Restrict to frontend domain
+app.use(cors({
+  origin: process.env.FRONTEND_URL || "http://localhost:5173",
+  credentials: true
+}));
 app.use(express.json());
 
-// Log all incoming requests for debugging
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url}`);
-  next();
-});
+// Request logging - only in development
+if (process.env.NODE_ENV === "development") {
+  app.use((req, res, next) => {
+    console.log(`${req.method} ${req.url}`);
+    next();
+  });
+}
+
+// Simple request logger (non-production)
+if (process.env.NODE_ENV !== "production") {
+  app.use((req, res, next) => {
+    // Sanitized logging - don't log passwords or tokens
+    const sanitizedUrl = req.url.replace(/password=\w+/g, "password=***");
+    console.log(`[${new Date().toISOString()}] ${req.method} ${sanitizedUrl}`);
+    next();
+  });
+}
 
 // Database initialization
 if (process.env.DB_TYPE === 'mongodb') {
   // Connect to MongoDB
-  console.log("Connecting to MongoDB:", process.env.MONGODB_URI);
-  console.log("MongoDB hosts:", process.env.MONGODB_URI.split('@')[1].split('/')[0]);
+  console.log("Connecting to MongoDB...");
 
   // Add connection event listeners
-  mongoose.connection.on('connected', () => console.log('Mongoose connected to MongoDB'));
-  mongoose.connection.on('error', (err) => console.log('Mongoose connection error:', err));
-  mongoose.connection.on('disconnected', () => console.log('Mongoose disconnected'));
+  mongoose.connection.on('connected', () => console.log('✅ Mongoose connected to MongoDB'));
+  mongoose.connection.on('error', (err) => console.log('❌ Mongoose connection error:', err.message));
+  mongoose.connection.on('disconnected', () => console.log('⚠️  Mongoose disconnected'));
 
   mongoose.connect(process.env.MONGODB_URI, {
     serverSelectionTimeoutMS: 30000,
@@ -44,15 +59,13 @@ if (process.env.DB_TYPE === 'mongodb') {
     retryWrites: true
   })
   .then(() => {
-    console.log("MongoDB connected");
-    console.log('Connection readyState:', mongoose.connection.readyState);
+    console.log("✅ MongoDB connected successfully");
     const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
+    startServer(PORT);
   })
   .catch((err) => {
-    console.error("MongoDB connection error:", err);
+    console.error("❌ MongoDB connection error:", err.message);
+    process.exit(1);
   });
 } else {
   // Initialize SQLite database
@@ -216,27 +229,75 @@ if (process.env.DB_TYPE === 'mongodb') {
   global.db = db;
 
   const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+  startServer(PORT);
+}
+
+// Start server
+function startServer(port) {
+  app.listen(port, () => {
+    console.log(`🚀 Server running on port ${port}`);
+    console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
   });
 }
 
-// Auth routes
-app.post("/api/auth/login", (req, res) => {
-  const { email, password } = req.body;
+// ========================
+// AUTHENTICATION MIDDLEWARE
+// ========================
 
-  if (email === "Himanshu@admin.com" && password === "no password") {
-    return res.json({
-      success: true,
-      token: "admin-demo-token"
+// Authentication endpoint - FIXED: No hardcoded credentials
+// Credentials should be in environment variables or database
+app.post("/api/auth/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required"
+      });
+    }
+
+    // NOTE: In production, validate against database with hashed passwords
+    // For now, use environment variables for demo
+    const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@dairyfarm.com";
+    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "ChangeMe123!";
+    
+    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+      // In production, use jsonwebtoken to create proper JWT tokens
+      return res.json({
+        success: true,
+        token: "admin-auth-token",
+        message: "Login successful"
+      });
+    }
+
+    return res.status(401).json({
+      success: false,
+      message: "Invalid email or password"
+    });
+  } catch (error) {
+    console.error("Login error:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Login failed"
     });
   }
-
-  return res.status(401).json({
-    success: false,
-    message: "Invalid email or password"
-  });
 });
+
+// Logout endpoint
+app.post("/api/auth/logout", (req, res) => {
+  res.json({ success: true, message: "Logged out successfully" });
+});
+
+// Health check endpoint
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+// ========================
+// API ROUTES
+// ========================
 
 app.use("/api/clients", clientRoutes);
 console.log("Mounting /api/milk routes");

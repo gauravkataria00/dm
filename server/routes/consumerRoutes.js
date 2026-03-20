@@ -115,9 +115,12 @@ router.delete("/:id", async (req, res) => {
 // Get consumer payment summary
 router.get("/:id/summary", async (req, res) => {
   try {
+    const mongoose = require('mongoose');
+    const consumerId = new mongoose.Types.ObjectId(req.params.id);
+    
     const [totalOwed, totalPaid, pendingSales] = await Promise.all([
       ConsumerSale.aggregate([
-        { $match: { consumerId: require('mongoose').Types.ObjectId(req.params.id) } },
+        { $match: { consumerId: consumerId } },
         { $group: { _id: null, amount: { $sum: "$total" } } }
       ]),
       ConsumerPayment.aggregate([
