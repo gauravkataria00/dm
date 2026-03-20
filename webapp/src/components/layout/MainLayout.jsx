@@ -1,8 +1,10 @@
 import { Link, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function MainLayout({ children }) {
   const location = useLocation();
+  const { language, setLanguage, t } = useLanguage();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -20,16 +22,21 @@ export default function MainLayout({ children }) {
   }, []);
 
   const navItems = [
-    { path: "/", label: "Dashboard", icon: "📊" },
-    { path: "/clients", label: "Clients", icon: "👥" },
-    { path: "/add-milk", label: "Add Milk Entry", icon: "🥛" },
-    { path: "/ledger", label: "Ledger", icon: "📋" },
-    { path: "/payments", label: "Payments", icon: "💳" },
-    { path: "/advances", label: "Advances", icon: "💵" },
-    { path: "/inventory", label: "Inventory", icon: "📦" },
-    { path: "/reports", label: "Reports", icon: "📈" },
-    { path: "/settings", label: "Settings", icon: "⚙️" },
+    { path: "/", label: t.dashboard, icon: "📊" },
+    { path: "/clients", label: t.clients, icon: "👥" },
+    { path: "/add-milk", label: t.addMilkEntry, icon: "🥛" },
+    { path: "/ledger", label: t.ledger, icon: "📋" },
+    { path: "/payments", label: t.payments, icon: "💳" },
+    { path: "/advances", label: t.advances, icon: "💵" },
+    { path: "/inventory", label: t.inventory, icon: "📦" },
+    { path: "/reports", label: t.reports, icon: "📈" },
+    { path: "/settings", label: t.settings, icon: "⚙️" },
   ];
+
+  const toggleLanguage = () => {
+    const newLanguage = language === "en" ? "hi" : "en";
+    setLanguage(newLanguage);
+  };
 
   return (
     <div className="flex min-h-screen transition-all duration-300 overflow-x-hidden">
@@ -77,17 +84,26 @@ export default function MainLayout({ children }) {
             </button>
           </div>
 
-          <h1 className="font-semibold text-lg sm:text-xl">Dairy Manager Pro</h1>
+          <h1 className="font-semibold text-lg sm:text-xl">{t.daiyManagerPro}</h1>
 
-          <button
-            onClick={() => {
-              localStorage.removeItem("adminToken");
-              window.location.href = "/login";
-            }}
-            className="text-sm text-white bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg transition"
-          >
-            Logout
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={toggleLanguage}
+              className="text-sm font-medium bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition duration-200"
+              title={language === "en" ? "Switch to Hindi" : "Switch to English"}
+            >
+              {language === "en" ? "हिंदी" : "EN"}
+            </button>
+            <button
+              onClick={() => {
+                localStorage.removeItem("adminToken");
+                window.location.href = "/login";
+              }}
+              className="text-sm text-white bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition"
+            >
+              {t.logout}
+            </button>
+          </div>
         </header>
 
         <main className="flex-1 w-full p-4 sm:p-6 overflow-auto transition-all duration-300">

@@ -2,8 +2,10 @@ import { useState, useEffect } from "react";
 import MainLayout from "../components/layout/MainLayout";
 import { getClients, createMilkEntry } from "../services/api";
 import { useToast } from "../context/ToastContext";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function AddMilk() {
+  const { t } = useLanguage();
   const [clients, setClients] = useState([]);
   const [filteredClients, setFilteredClients] = useState([]);
   const [selectedClientId, setSelectedClientId] = useState("");
@@ -27,14 +29,14 @@ export default function AddMilk() {
         setClients(data || []);
         setFilteredClients(data || []);
       } catch {
-        push("Failed to load clients", "error");
+        push(t.failedToLoadClients, "error");
       } finally {
         setLoading(false);
       }
     };
 
     loadClients();
-  }, [push]);
+  }, [push, t]);
 
   // ✅ FORCE EMPTY STATE ON PAGE LOAD
   useEffect(() => {
@@ -69,12 +71,12 @@ export default function AddMilk() {
 
   const handleSave = async () => {
     if (!selectedClientId) {
-      push("Please select a customer", "error");
+      push(t.pleaseSelectCustomer, "error");
       return;
     }
 
     if (!litres || Number(litres) <= 0) {
-      push("Enter a valid litres value", "error");
+      push(t.enterValidLitres, "error");
       return;
     }
 
@@ -88,15 +90,15 @@ export default function AddMilk() {
         snf: Number(snf) || 0,
         rate: Number(rate),
         total,
-        shift, // ✅ NEW FIELD
+        shift,
       });
-      push("Milk entry saved", "success");
+      push(t.milkEntrySaved, "success");
       setLitres("");
       setFat("");
       setSnf("");
       setRate("");
     } catch {
-      push("Failed to save milk entry", "error");
+      push(t.failedToSaveMilk, "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -104,37 +106,37 @@ export default function AddMilk() {
 
   return (
     <MainLayout>
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Add Milk Entry</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">{t.addMilk}</h1>
 
       <div className="bg-white dark:bg-gray-900 text-black dark:text-white rounded-xl shadow-md p-6 space-y-5">
         {loading ? (
-          <div className="text-center text-gray-500">Loading customers...</div>
+          <div className="text-center text-gray-500">{t.loading}</div>
         ) : clients.length === 0 ? (
           <div className="text-center text-gray-500">
-            No customers found. Please add a customer first.
+            {t.noClientsFound}
           </div>
         ) : (
           <>
-            <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">Customer</label>
+            <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">{t.customer}</label>
             <div className="relative">
               <input
                 type="text"
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
-                  setSelectedClientId(""); // ✅ RESET ON TYPING
+                  setSelectedClientId("");
                   setDropdownOpen(true);
                 }}
                 onFocus={() => setDropdownOpen(true)}
                 onBlur={() => setTimeout(() => setDropdownOpen(false), 150)}
-                placeholder="Search client by name / phone / SR No."
+                placeholder={t.search}
                 className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
               />
 
               {dropdownOpen && clients?.length > 0 && (
                 <div className="absolute z-20 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-auto">
                   {filteredClients?.length === 0 ? (
-                    <div className="p-3 text-sm text-gray-500 dark:text-gray-400">No clients found</div>
+                    <div className="p-3 text-sm text-gray-500 dark:text-gray-400">{t.noClientsFound}</div>
                   ) : (
                     filteredClients.map((client) => (
                       <button
@@ -173,7 +175,7 @@ export default function AddMilk() {
                     : "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
                 }`}
               >
-                Cow
+                {t.cow}
               </button>
 
               <button
@@ -185,7 +187,7 @@ export default function AddMilk() {
                     : "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
                 }`}
               >
-                Buffalo
+                {t.buffalo}
               </button>
             </div>
 
@@ -200,7 +202,7 @@ export default function AddMilk() {
                     : "bg-gray-600 text-white hover:bg-gray-500"
                 }`}
               >
-                🌅 Morning
+                🌅 {t.morning}
               </button>
               <button
                 type="button"
@@ -211,14 +213,14 @@ export default function AddMilk() {
                     : "bg-gray-600 text-white hover:bg-gray-500"
                 }`}
               >
-                🌙 Evening
+                🌙 {t.evening}
               </button>
             </div>
 
             {/* Inputs */}
             <input
               type="number"
-              placeholder="Litres"
+              placeholder={t.litres}
               value={litres}
               onChange={(e) => setLitres(e.target.value)}
               className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
@@ -226,7 +228,7 @@ export default function AddMilk() {
 
             <input
               type="number"
-              placeholder="Fat %"
+              placeholder={t.fat}
               value={fat}
               onChange={(e) => setFat(e.target.value)}
               className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
@@ -234,7 +236,7 @@ export default function AddMilk() {
 
             <input
               type="number"
-              placeholder="SNF %"
+              placeholder={t.snf}
               value={snf}
               onChange={(e) => setSnf(e.target.value)}
               className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
@@ -242,7 +244,7 @@ export default function AddMilk() {
 
             <input
               type="number"
-              placeholder="Enter Rate (₹/L)"
+              placeholder={t.rate}
               value={rate}
               onChange={(e) => setRate(e.target.value)}
               className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
@@ -250,8 +252,8 @@ export default function AddMilk() {
 
             {/* Calculation */}
             <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg">
-              <p className="text-gray-800 dark:text-gray-200">Rate: ₹ {Number(rate || 0).toFixed(2)}</p>
-              <p className="font-bold text-lg text-gray-900 dark:text-white">Total: ₹ {total.toFixed(2)}</p>
+              <p className="text-gray-800 dark:text-gray-200">{t.rate}: ₹ {Number(rate || 0).toFixed(2)}</p>
+              <p className="font-bold text-lg text-gray-900 dark:text-white">{t.total}: ₹ {total.toFixed(2)}</p>
             </div>
 
             <button
@@ -260,7 +262,7 @@ export default function AddMilk() {
               disabled={isSubmitting}
               className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition disabled:opacity-50"
             >
-              {isSubmitting ? "Saving..." : "Save Entry"}
+              {isSubmitting ? t.loading : t.save}
             </button>
           </>
         )}
