@@ -168,6 +168,10 @@ router.delete("/:id", async (req, res) => {
       return res.status(400).json({ error: "ID is required" });
     }
 
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: "Invalid milk entry ID" });
+    }
+
     const deletedEntry = await MilkEntry.findByIdAndDelete(id);
 
     if (!deletedEntry) {

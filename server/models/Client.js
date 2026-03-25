@@ -5,8 +5,7 @@ const clientSchema = new mongoose.Schema({
     type: String,
     required: [true, "Client name is required"],
     minlength: [2, "Name must be at least 2 characters long"],
-    trim: true,
-    text: true // for text search
+    trim: true
   },
   phone: {
     type: String,

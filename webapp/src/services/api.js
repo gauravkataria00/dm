@@ -135,6 +135,26 @@ export const createMilkEntry = async (entryData) => {
   }
 };
 
+export const deleteMilkEntry = async (id) => {
+  try {
+    const response = await fetch(`${API_BASE_URL_WITH_API}/milk/${id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(payload?.error || `Failed to delete milk entry (${response.status})`);
+    }
+
+    return payload;
+  } catch (error) {
+    console.error("Error deleting milk entry:", error);
+    throw error;
+  }
+};
+
 // Settlements
 export const getSettlements = async () => {
   try {
