@@ -1,4 +1,5 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const router = express.Router();
 const MilkEntry = require("../models/MilkEntry");
 const Client = require("../models/Client");
@@ -12,22 +13,64 @@ router.get("/", async (req, res) => {
     const skip = (page - 1) * limit;
 
     let query = {};
-    if (clientId) query.clientId = clientId;
+    if (clientId) {
+      if (!mongoose.Types.ObjectId.isValid(clientId)) {
+        return res.status(400).json({ error: "Invalid clientId" });
+      }
+      query.clientId = new mongoose.Types.ObjectId(clientId);
+    }
 
-    const [milkEntries, total] = await Promise.all([
-      MilkEntry.find(query)
-        .populate('clientId', 'name phone')
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      MilkEntry.countDocuments(query)
+    const [result] = await MilkEntry.aggregate([
+      { $match: query },
+      { $sort: { createdAt: -1 } },
+      {
+        $facet: {
+          data: [
+            { $skip: skip },
+            { $limit: limit },
+            {
+              $lookup: {
+                from: "clients",
+                localField: "clientId",
+                foreignField: "_id",
+                as: "client"
+              }
+            },
+            {
+              $unwind: {
+                path: "$client",
+                preserveNullAndEmptyArrays: true
+              }
+            },
+            {
+              $project: {
+                _id: 1,
+                clientId: "$client._id",
+                litres: 1,
+                fat: 1,
+                snf: 1,
+                rate: 1,
+                total: 1,
+                type: 1,
+                shift: 1,
+                createdAt: 1,
+                clientName: { $ifNull: ["$client.name", "Unknown"] },
+                clientPhone: { $ifNull: ["$client.phone", "N/A"] }
+              }
+            }
+          ],
+          total: [{ $count: "count" }]
+        }
+      }
     ]);
+
+    const milkEntries = result?.data || [];
+    const total = result?.total?.[0]?.count || 0;
 
     const data = milkEntries.map(entry => ({
       id: entry._id,
       _id: entry._id,
-      clientId: entry.clientId?._id,
+      clientId: entry.clientId,
       litres: entry.litres,
       fat: entry.fat,
       snf: entry.snf,
@@ -37,10 +80,10 @@ router.get("/", async (req, res) => {
       shift: entry.shift,
       createdAt: entry.createdAt,
       client: {
-        name: entry.clientId?.name || "Unknown",
-        phone: entry.clientId?.phone || "N/A"
+        name: entry.clientName || "Unknown",
+        phone: entry.clientPhone || "N/A"
       },
-      clientName: entry.clientId?.name || "Unknown"
+      clientName: entry.clientName || "Unknown"
     }));
 
     res.json({
