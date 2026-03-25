@@ -7,12 +7,13 @@ const Client = require("../models/Client");
 // Get all milk entries with proper error handling
 router.get("/", async (req, res) => {
   try {
+    const userObjectId = new mongoose.Types.ObjectId(req.user.id);
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const clientId = req.query.clientId;
     const skip = (page - 1) * limit;
 
-    let query = {};
+    let query = { userId: userObjectId };
     if (clientId) {
       if (!mongoose.Types.ObjectId.isValid(clientId)) {
         return res.status(400).json({ error: "Invalid clientId" });
@@ -114,7 +115,7 @@ router.post("/", async (req, res) => {
     if (!rate || rate < 0) return res.status(400).json({ error: "Rate must be provided and positive" });
 
     // Validate client exists
-    const client = await Client.findById(clientId);
+    const client = await Client.findOne({ _id: clientId, userId: req.user.id });
     if (!client) {
       return res.status(400).json({ error: "Invalid client - client does not exist" });
     }
@@ -123,6 +124,7 @@ router.post("/", async (req, res) => {
     const calculatedTotal = litres * rate;
 
     const milkEntry = new MilkEntry({
+      userId: req.user.id,
       clientId,
       type: type || "Standard",
       litres,
@@ -172,7 +174,7 @@ router.delete("/:id", async (req, res) => {
       return res.status(400).json({ error: "Invalid milk entry ID" });
     }
 
-    const deletedEntry = await MilkEntry.findByIdAndDelete(id);
+    const deletedEntry = await MilkEntry.findOneAndDelete({ _id: id, userId: req.user.id });
 
     if (!deletedEntry) {
       return res.status(404).json({ error: "Milk entry not found" });

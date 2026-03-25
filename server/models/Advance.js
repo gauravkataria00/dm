@@ -1,6 +1,12 @@
 const mongoose = require("mongoose");
 
 const advanceSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+    index: true,
+  },
   clientId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Client',
@@ -40,9 +46,8 @@ const advanceSchema = new mongoose.Schema({
 });
 
 // Pre-save hook
-advanceSchema.pre('save', function(next) {
+advanceSchema.pre('save', function() {
   this.updatedAt = new Date();
-  next();
 });
 
 // Indexes

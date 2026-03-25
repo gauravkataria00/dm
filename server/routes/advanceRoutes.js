@@ -5,7 +5,7 @@ const Advance = require("../models/Advance");
 // Get all advances with client names
 router.get("/", async (req, res) => {
   try {
-    let advances = await Advance.find()
+    let advances = await Advance.find({ userId: req.user.id })
       .populate('clientId', 'name phone')
       .sort({ createdAt: -1 });
     
@@ -38,7 +38,7 @@ router.get("/", async (req, res) => {
 // Get advances for a specific client
 router.get("/client/:clientId", async (req, res) => {
   try {
-    let advances = await Advance.find({ clientId: req.params.clientId })
+    let advances = await Advance.find({ userId: req.user.id, clientId: req.params.clientId })
       .populate('clientId', 'name phone')
       .sort({ createdAt: -1 });
     
@@ -79,13 +79,13 @@ router.post("/", async (req, res) => {
 
     // Validate that client exists before saving
     const Client = require("../models/Client");
-    const client = await Client.findById(clientId);
+    const client = await Client.findOne({ _id: clientId, userId: req.user.id });
     if (!client) {
       console.error(`Invalid clientId: ${clientId}`);
       return res.status(400).json({ error: "Invalid client" });
     }
 
-    const advance = new Advance({ clientId, amount, date, purpose, status: 'active' });
+    const advance = new Advance({ userId: req.user.id, clientId, amount, date, purpose, status: 'active' });
     await advance.save();
     await advance.populate('clientId', 'name phone');
 
@@ -118,7 +118,7 @@ router.put("/:id", async (req, res) => {
       return res.status(400).json({ error: "status is required" });
     }
 
-    const advance = await Advance.findByIdAndUpdate(req.params.id, { status }, { new: true });
+    const advance = await Advance.findOneAndUpdate({ _id: req.params.id, userId: req.user.id }, { status }, { new: true });
     if (!advance) {
       return res.status(404).json({ error: "Advance not found" });
     }

@@ -1,6 +1,12 @@
 const mongoose = require("mongoose");
 
 const settlementSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+    index: true,
+  },
   clientId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Client',
@@ -43,12 +49,11 @@ const settlementSchema = new mongoose.Schema({
 });
 
 // Pre-save hook to validate dates
-settlementSchema.pre('save', function(next) {
+settlementSchema.pre('save', function() {
   if (this.endDate <= this.startDate) {
     throw new Error('End date must be after start date');
   }
   this.updatedAt = new Date();
-  next();
 });
 
 // Indexes

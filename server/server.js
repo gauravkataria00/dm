@@ -1,9 +1,14 @@
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
 const mongoose = require("mongoose");
 const sqlite3 = require("sqlite3").verbose();
 const path = require("path");
 require("dotenv").config();
+
+const { authenticate } = require("./middleware/authMiddleware");
+const { requestContextMiddleware } = require("./middleware/requestContext");
 
 const clientRoutes = require("./routes/clientRoutes");
 const milkRoutes = require("./routes/milkRoutes");
@@ -14,15 +19,40 @@ const consumerRoutes = require("./routes/consumerRoutes");
 const consumerSalesRoutes = require("./routes/consumerSalesRoutes");
 const consumerPaymentRoutes = require("./routes/consumerPaymentRoutes");
 const inventoryRoutes = require("./routes/inventoryRoutes");
+const authRoutes = require("./routes/authRoutes");
 
 const app = express();
+app.disable("x-powered-by");
 
 // CORS Configuration - Restrict to frontend domain
+const allowedOrigins = String(
+  process.env.CORS_ALLOWED_ORIGINS || process.env.FRONTEND_URL || "http://localhost:5173"
+)
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:5173",
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error("CORS blocked for this origin"));
+  },
   credentials: true
 }));
-app.use(express.json());
+app.use(helmet());
+app.use(express.json({ limit: "100kb" }));
+app.use(
+  "/api",
+  rateLimit({
+    windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS || 60000),
+    max: Number(process.env.RATE_LIMIT_MAX || 200),
+    standardHeaders: true,
+    legacyHeaders: false,
+  })
+);
+app.use(requestContextMiddleware);
 
 // Simple request logger (non-production)
 if (process.env.NODE_ENV !== "production") {
@@ -233,54 +263,14 @@ function startServer(port) {
 }
 
 // ========================
-// AUTHENTICATION MIDDLEWARE
+// AUTHENTICATION
 // ========================
 
-// Authentication endpoint - FIXED: No hardcoded credentials
-// Credentials should be in environment variables or database
-app.post("/api/auth/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
+if (!process.env.JWT_SECRET) {
+  console.warn("⚠️ JWT_SECRET is not set. Authentication tokens are insecure in this environment.");
+}
 
-    // Validate input
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Email and password are required"
-      });
-    }
-
-    // NOTE: In production, validate against database with hashed passwords
-    // For now, use environment variables for demo
-    const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@dairyfarm.com";
-    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "ChangeMe123!";
-    
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-      // In production, use jsonwebtoken to create proper JWT tokens
-      return res.json({
-        success: true,
-        token: "admin-auth-token",
-        message: "Login successful"
-      });
-    }
-
-    return res.status(401).json({
-      success: false,
-      message: "Invalid email or password"
-    });
-  } catch (error) {
-    console.error("Login error:", error.message);
-    res.status(500).json({
-      success: false,
-      message: "Login failed"
-    });
-  }
-});
-
-// Logout endpoint
-app.post("/api/auth/logout", (req, res) => {
-  res.json({ success: true, message: "Logged out successfully" });
-});
+app.use("/api/auth", authRoutes);
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
@@ -291,16 +281,16 @@ app.get("/api/health", (req, res) => {
 // API ROUTES
 // ========================
 
-app.use("/api/clients", clientRoutes);
+app.use("/api/clients", authenticate, clientRoutes);
 console.log("Mounting /api/milk routes");
-app.use("/api/milk", milkRoutes);
-app.use("/api/settlements", settlementRoutes);
-app.use("/api/payments", paymentRoutes);
-app.use("/api/advances", advanceRoutes);
-app.use("/api/consumers", consumerRoutes);
-app.use("/api/consumer-sales", consumerSalesRoutes);
-app.use("/api/consumer-payments", consumerPaymentRoutes);
-app.use("/api/inventory", inventoryRoutes);
+app.use("/api/milk", authenticate, milkRoutes);
+app.use("/api/settlements", authenticate, settlementRoutes);
+app.use("/api/payments", authenticate, paymentRoutes);
+app.use("/api/advances", authenticate, advanceRoutes);
+app.use("/api/consumers", authenticate, consumerRoutes);
+app.use("/api/consumer-sales", authenticate, consumerSalesRoutes);
+app.use("/api/consumer-payments", authenticate, consumerPaymentRoutes);
+app.use("/api/inventory", authenticate, inventoryRoutes);
 
 app.get("/ping", (req, res) => {
   res.send("pong");

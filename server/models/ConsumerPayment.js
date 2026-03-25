@@ -1,6 +1,12 @@
 const mongoose = require("mongoose");
 
 const consumerPaymentSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+    index: true,
+  },
   consumerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Consumer',
@@ -40,13 +46,13 @@ const consumerPaymentSchema = new mongoose.Schema({
 });
 
 // Pre-save hook
-consumerPaymentSchema.pre('save', function(next) {
+consumerPaymentSchema.pre('save', function() {
   this.updatedAt = new Date();
-  next();
 });
 
 // Indexes
 consumerPaymentSchema.index({ consumerId: 1, date: -1 });
 consumerPaymentSchema.index({ date: -1 });
+
 
 module.exports = mongoose.model("ConsumerPayment", consumerPaymentSchema);

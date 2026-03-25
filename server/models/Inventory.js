@@ -1,6 +1,12 @@
 const mongoose = require("mongoose");
 
 const inventorySchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+    index: true,
+  },
   type: {
     type: String,
     required: [true, "Inventory type is required"],
@@ -46,14 +52,13 @@ const inventorySchema = new mongoose.Schema({
 });
 
 // Pre-save hook to validate and calculate closing stock
-inventorySchema.pre('save', function(next) {
+inventorySchema.pre('save', function() {
   // Validate: closing_stock = opening_stock + received - sold
   const calculatedClosing = this.opening_stock + this.received - this.sold;
   if (calculatedClosing !== this.closing_stock) {
     this.closing_stock = calculatedClosing;
   }
   this.updatedAt = new Date();
-  next();
 });
 
 // Unique index on type and date

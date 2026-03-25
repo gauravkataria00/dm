@@ -7,7 +7,7 @@ const ConsumerPayment = require("../models/ConsumerPayment");
 // Get all consumers
 router.get("/", async (req, res) => {
   try {
-    const consumers = await Consumer.find().sort({ createdAt: -1 });
+    const consumers = await Consumer.find({ userId: req.user.id }).sort({ createdAt: -1 });
     res.json(consumers.map(consumer => ({
       id: consumer._id,
       name: consumer.name,
@@ -25,7 +25,7 @@ router.get("/", async (req, res) => {
 // Get single consumer by ID
 router.get("/:id", async (req, res) => {
   try {
-    const consumer = await Consumer.findById(req.params.id);
+    const consumer = await Consumer.findOne({ _id: req.params.id, userId: req.user.id });
     if (!consumer) return res.status(404).json({ error: "Consumer not found" });
     res.json({
       id: consumer._id,
@@ -51,6 +51,7 @@ router.post("/", async (req, res) => {
     }
 
     const consumer = new Consumer({
+      userId: req.user.id,
       name,
       phone,
       address,
@@ -78,7 +79,7 @@ router.put("/:id", async (req, res) => {
   try {
     const { name, phone, address, type, credit_limit } = req.body;
 
-    const consumer = await Consumer.findByIdAndUpdate(req.params.id, {
+    const consumer = await Consumer.findOneAndUpdate({ _id: req.params.id, userId: req.user.id }, {
       name,
       phone,
       address,
@@ -105,7 +106,7 @@ router.put("/:id", async (req, res) => {
 // Delete consumer
 router.delete("/:id", async (req, res) => {
   try {
-    await Consumer.findByIdAndDelete(req.params.id);
+    await Consumer.findOneAndDelete({ _id: req.params.id, userId: req.user.id });
     res.json({ message: "Consumer deleted successfully" });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -120,15 +121,15 @@ router.get("/:id/summary", async (req, res) => {
     
     const [totalOwed, totalPaid, pendingSales] = await Promise.all([
       ConsumerSale.aggregate([
-        { $match: { consumerId: consumerId } },
+        { $match: { userId: new mongoose.Types.ObjectId(req.user.id), consumerId: consumerId } },
         { $group: { _id: null, amount: { $sum: "$total" } } }
       ]),
       ConsumerPayment.aggregate([
-        { $match: { consumerId: require('mongoose').Types.ObjectId(req.params.id) } },
+        { $match: { userId: new mongoose.Types.ObjectId(req.user.id), consumerId: require('mongoose').Types.ObjectId(req.params.id) } },
         { $group: { _id: null, amount: { $sum: "$amount" } } }
       ]),
       ConsumerSale.aggregate([
-        { $match: { consumerId: require('mongoose').Types.ObjectId(req.params.id), payment_status: 'pending' } },
+        { $match: { userId: new mongoose.Types.ObjectId(req.user.id), consumerId: require('mongoose').Types.ObjectId(req.params.id), payment_status: 'pending' } },
         { $group: { _id: null, amount: { $sum: "$total" } } }
       ])
     ]);

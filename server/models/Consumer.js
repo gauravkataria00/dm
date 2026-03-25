@@ -1,6 +1,12 @@
 const mongoose = require("mongoose");
 
 const consumerSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+    index: true,
+  },
   name: {
     type: String,
     required: [true, "Consumer name is required"],
@@ -42,13 +48,13 @@ const consumerSchema = new mongoose.Schema({
 });
 
 // Pre-save hook
-consumerSchema.pre('save', function(next) {
+consumerSchema.pre('save', function() {
   this.updatedAt = new Date();
-  next();
 });
 
 // Indexes
 consumerSchema.index({ phone: 1 });
 consumerSchema.index({ type: 1 });
+
 
 module.exports = mongoose.model("Consumer", consumerSchema);

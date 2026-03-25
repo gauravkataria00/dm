@@ -2,8 +2,11 @@ import { useState, useEffect } from "react";
 import MainLayout from "../components/layout/MainLayout";
 import { getClients, createClient, deleteClient } from "../services/api";
 import { useToast } from "../context/ToastContext";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function Clients() {
+  const { language } = useLanguage();
+  const tr = (hi, en) => (language === "hi" ? hi : en);
   const [clients, setClients] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
@@ -26,7 +29,7 @@ export default function Clients() {
       setClients(data);
       setError("");
     } catch {
-      setError("Failed to load clients");
+      setError(tr("ग्राहक लोड नहीं हुए", "Failed to load clients"));
     } finally {
       setLoading(false);
     }
@@ -35,11 +38,11 @@ export default function Clients() {
   const handleAddClient = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) {
-      setError("Client name is required");
+      setError(tr("ग्राहक का नाम जरूरी है", "Client name is required"));
       return;
     }
     if (!formData.phone.trim() || formData.phone.length < 10) {
-      setError("Valid phone number is required");
+      setError(tr("सही फोन नंबर जरूरी है", "Valid phone number is required"));
       return;
     }
 
@@ -48,27 +51,27 @@ export default function Clients() {
       const newClient = await createClient(formData);
       setClients([...clients, newClient]);
       setFormData({ name: "", phone: "" });
-      setSuccess("Client added successfully!");
+      setSuccess(tr("ग्राहक सफलतापूर्वक जोड़ दिया गया!", "Client added successfully!"));
       setError("");
-      push("Client added successfully", "success");
+      push(tr("ग्राहक जोड़ दिया गया", "Client added successfully"), "success");
       setTimeout(() => setSuccess(""), 3000);
     } catch {
-      setError("Failed to add client");
+      setError(tr("ग्राहक जोड़ने में समस्या", "Failed to add client"));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure?")) return;
+    if (!window.confirm(tr("क्या आप पक्का हटाना चाहते हैं?", "Are you sure?"))) return;
     try {
       await deleteClient(id);
       setClients(clients.filter((c) => c.id !== id));
-      push("Client deleted", "success");
+      push(tr("ग्राहक हट गया", "Client deleted"), "success");
       setTimeout(() => setSuccess(""), 3000);
     } catch {
-      push("Failed to delete client", "error");
-      setError("Failed to delete client");
+      push(tr("ग्राहक हटाने में समस्या", "Failed to delete client"), "error");
+      setError(tr("ग्राहक हटाने में समस्या", "Failed to delete client"));
     }
   };
 
@@ -88,33 +91,33 @@ export default function Clients() {
     a.download = "clients.csv";
     a.click();
     URL.revokeObjectURL(url);
-    push("Exported clients.csv", "success");
+    push(tr("CSV डाउनलोड हो गई", "Exported clients.csv"), "success");
   };
 
   return (
     <MainLayout>
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Clients Management</h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">Manage your dairy clients and suppliers here.</p>
+        <h1 className="text-4xl font-bold text-gray-900 dark:text-white">{tr("ग्राहक प्रबंधन", "Clients Management")}</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-2">{tr("यहां ग्राहक जोड़ें, खोजें और हटाएं।", "Manage your dairy clients and suppliers here.")}</p>
       </div>
 
       {error && <div className="mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded">❌ {error}</div>}
       {success && <div className="mb-4 p-4 bg-green-100 border-l-4 border-green-500 text-green-700 rounded">✅ {success}</div>}
 
       <div className="bg-white dark:bg-gray-900 text-black dark:text-white rounded-xl shadow-md p-6 mb-8">
-        <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white mb-4">➕ Add New Client</h2>
+        <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white mb-4">{tr("➕ नया ग्राहक जोड़ें", "➕ Add New Client")}</h2>
         <form onSubmit={handleAddClient} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <input
               type="text"
-              placeholder="Client Name"
+              placeholder={tr("ग्राहक का नाम", "Client Name")}
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className="px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
             />
             <input
               type="tel"
-              placeholder="Phone Number"
+              placeholder={tr("फोन नंबर", "Phone Number")}
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               className="px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
@@ -125,7 +128,7 @@ export default function Clients() {
             disabled={isSubmitting}
             className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition disabled:opacity-50"
           >
-            {isSubmitting ? "Adding..." : "Add Client"}
+            {isSubmitting ? tr("जोड़ रहे हैं...", "Adding...") : tr("ग्राहक जोड़ें", "Add Client")}
           </button>
         </form>
       </div>
@@ -133,7 +136,7 @@ export default function Clients() {
       <div className="mb-4">
         <input
           type="text"
-          placeholder="🔍 Search by name or phone..."
+          placeholder={tr("🔍 नाम या फोन से खोजें...", "🔍 Search by name or phone...")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
@@ -142,9 +145,9 @@ export default function Clients() {
 
       <div className="bg-white dark:bg-gray-900 text-black dark:text-white rounded-xl shadow-md overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-gray-500">Loading clients...</div>
+          <div className="p-8 text-center text-gray-500">{tr("ग्राहक लोड हो रहे हैं...", "Loading clients...")}</div>
         ) : filteredClients.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">No clients found</div>
+          <div className="p-8 text-center text-gray-500">{tr("कोई ग्राहक नहीं मिला", "No clients found")}</div>
         ) : (
           <>
             {/* Mobile-friendly list */}
@@ -158,13 +161,13 @@ export default function Clients() {
                     <div>
                       <div className="font-semibold text-white">{client.name}</div>
                       <div className="text-gray-300">{client.phone}</div>
-                      <div className="text-xs text-gray-400 mt-1">Joined: {new Date(client.createdAt).toLocaleDateString()}</div>
+                      <div className="text-xs text-gray-400 mt-1">{tr("जुड़ा", "Joined")}: {new Date(client.createdAt).toLocaleDateString()}</div>
                     </div>
                     <button
                       onClick={() => handleDelete(client.id)}
                       className="text-red-600 hover:text-red-800 font-medium text-sm"
                     >
-                      Delete
+                      {tr("हटाएं", "Delete")}
                     </button>
                   </div>
                 </div>
@@ -176,10 +179,10 @@ export default function Clients() {
               <table className="min-w-full">
                 <thead className="bg-gray-100 border-b">
                   <tr>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Name</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Phone</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Joined</th>
-                    <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700">Actions</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">{tr("नाम", "Name")}</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">{tr("फोन", "Phone")}</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">{tr("जुड़ने की तारीख", "Joined")}</th>
+                    <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700">{tr("कार्रवाई", "Actions")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -196,7 +199,7 @@ export default function Clients() {
                           onClick={() => handleDelete(client.id)}
                           className="text-red-600 hover:text-red-800 font-medium transition"
                         >
-                          Delete
+                          {tr("हटाएं", "Delete")}
                         </button>
                       </td>
                     </tr>
@@ -210,7 +213,7 @@ export default function Clients() {
 
       <div className="mt-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <button onClick={exportCSV} className="px-4 py-2 bg-green-600 text-white rounded">Export CSV</button>
+          <button onClick={exportCSV} className="px-4 py-2 bg-green-600 text-white rounded">{tr("CSV डाउनलोड", "Export CSV")}</button>
         </div>
 
         <div className="flex items-center gap-2">
@@ -223,9 +226,9 @@ export default function Clients() {
                 : "px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition border border-gray-600"
             }
           >
-            Prev
+            {tr("पिछला", "Prev")}
           </button>
-          <span className="px-3">Page {page} / {totalPages}</span>
+          <span className="px-3">{tr("पेज", "Page")} {page} / {totalPages}</span>
           <button
             disabled={page>=totalPages}
             onClick={()=>setPage((p)=>Math.min(totalPages,p+1))}
@@ -235,7 +238,7 @@ export default function Clients() {
                 : "px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition border border-gray-600"
             }
           >
-            Next
+            {tr("अगला", "Next")}
           </button>
         </div>
       </div>

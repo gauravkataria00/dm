@@ -14,6 +14,7 @@ const translations = {
 
     // Dashboard
     daiyManagerPro: "Dairy Manager Pro",
+    dairyManagerPro: "Dairy Manager Pro",
     totalClients: "Total Clients",
     activeClients: "Active Clients",
     totalMilkToday: "Total Milk Today",
@@ -149,8 +150,20 @@ const translations = {
 
     // Login
     loginPage: "Login",
+    login: "Login",
+    signup: "Sign Up",
+    createAccount: "Create Account",
+    email: "Email",
     username: "Username",
     password: "Password",
+    yourName: "Your name",
+    enterPassword: "Enter password",
+    processing: "Processing...",
+    noAccountSignUp: "No account? Sign up",
+    alreadyHaveAccountLogin: "Already have an account? Login",
+    switchToHindi: "Switch to Hindi",
+    switchToEnglish: "Switch to English",
+    serverError: "Server error",
     submit: "Submit",
     loginFailed: "Login failed",
     pleaseEnterCredentials: "Please enter valid credentials",
@@ -185,6 +198,7 @@ const translations = {
 
     // Dashboard
     daiyManagerPro: "डेयरी मैनेजर प्रो",
+    dairyManagerPro: "डेयरी मैनेजर प्रो",
     totalClients: "कुल ग्राहक",
     activeClients: "सक्रिय ग्राहक",
     totalMilkToday: "आज कुल दूध",
@@ -320,8 +334,20 @@ const translations = {
 
     // Login
     loginPage: "लॉगिन",
+    login: "लॉगिन",
+    signup: "साइन अप",
+    createAccount: "खाता बनाएं",
+    email: "ईमेल",
     username: "उपयोगकर्ता नाम",
     password: "पासवर्ड",
+    yourName: "आपका नाम",
+    enterPassword: "पासवर्ड दर्ज करें",
+    processing: "प्रोसेस हो रहा है...",
+    noAccountSignUp: "खाता नहीं है? साइन अप करें",
+    alreadyHaveAccountLogin: "पहले से खाता है? लॉगिन करें",
+    switchToHindi: "हिंदी में बदलें",
+    switchToEnglish: "अंग्रेज़ी में बदलें",
+    serverError: "सर्वर त्रुटि",
     submit: "जमा करें",
     loginFailed: "लॉगिन विफल",
     pleaseEnterCredentials: "कृपया सही क्रेडेंशियल दर्ज करें",

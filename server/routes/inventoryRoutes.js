@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const mongoose = require("mongoose");
 const Inventory = require("../models/Inventory");
 const MilkEntry = require("../models/MilkEntry");
 const ConsumerSale = require("../models/ConsumerSale");
@@ -7,7 +8,7 @@ const ConsumerSale = require("../models/ConsumerSale");
 // Get all inventory records
 router.get("/", async (req, res) => {
   try {
-    const inventory = await Inventory.find().sort({ date: -1, createdAt: -1 });
+    const inventory = await Inventory.find({ userId: req.user.id }).sort({ date: -1, createdAt: -1 });
     res.json(inventory.map(item => ({
       id: item._id,
       type: item.type,
@@ -26,7 +27,7 @@ router.get("/", async (req, res) => {
 // Get inventory for a specific date
 router.get("/date/:date", async (req, res) => {
   try {
-    const inventory = await Inventory.find({ date: req.params.date }).sort({ createdAt: -1 });
+    const inventory = await Inventory.find({ userId: req.user.id, date: req.params.date }).sort({ createdAt: -1 });
     res.json(inventory.map(item => ({
       id: item._id,
       type: item.type,
@@ -46,7 +47,7 @@ router.get("/date/:date", async (req, res) => {
 router.get("/today", async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0];
-    const inventory = await Inventory.find({ date: today }).sort({ createdAt: -1 });
+    const inventory = await Inventory.find({ userId: req.user.id, date: today }).sort({ createdAt: -1 });
     res.json(inventory.map(item => ({
       id: item._id,
       type: item.type,
@@ -72,6 +73,7 @@ router.post("/", async (req, res) => {
     }
 
     const inventory = new Inventory({
+      userId: req.user.id,
       type,
       opening_stock: opening_stock || 0,
       received: received || 0,
@@ -102,7 +104,7 @@ router.put("/:id", async (req, res) => {
   try {
     const { type, opening_stock, received, sold, closing_stock, date } = req.body;
 
-    const inventory = await Inventory.findByIdAndUpdate(req.params.id, {
+    const inventory = await Inventory.findOneAndUpdate({ _id: req.params.id, userId: req.user.id }, {
       type,
       opening_stock,
       received,
@@ -138,10 +140,13 @@ router.post("/calculate/today", async (req, res) => {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
+    const userObjectId = new mongoose.Types.ObjectId(req.user.id);
+
     // Get milk received today (from suppliers)
     const receivedData = await MilkEntry.aggregate([
       {
         $match: {
+          userId: userObjectId,
           createdAt: { $gte: today, $lt: tomorrow }
         }
       },
@@ -157,6 +162,7 @@ router.post("/calculate/today", async (req, res) => {
     const soldData = await ConsumerSale.aggregate([
       {
         $match: {
+          userId: userObjectId,
           createdAt: { $gte: today, $lt: tomorrow }
         }
       },
@@ -173,7 +179,7 @@ router.post("/calculate/today", async (req, res) => {
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = yesterday.toISOString().split('T')[0];
 
-    const yesterdayRecords = await Inventory.find({ date: yesterdayStr });
+    const yesterdayRecords = await Inventory.find({ userId: req.user.id, date: yesterdayStr });
 
     const inventoryRecords = [];
 
@@ -212,8 +218,8 @@ router.post("/calculate/today", async (req, res) => {
     // Insert or update inventory records
     for (const record of inventoryRecords) {
       await Inventory.findOneAndUpdate(
-        { type: record.type, date: record.date },
-        record,
+        { userId: req.user.id, type: record.type, date: record.date },
+        { ...record, userId: req.user.id },
         { upsert: true, new: true }
       );
     }

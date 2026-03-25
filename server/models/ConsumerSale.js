@@ -1,6 +1,12 @@
 const mongoose = require("mongoose");
 
 const consumerSaleSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+    index: true,
+  },
   consumerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Consumer',
@@ -53,18 +59,18 @@ const consumerSaleSchema = new mongoose.Schema({
 });
 
 // Pre-save hook to validate total
-consumerSaleSchema.pre('save', function(next) {
+consumerSaleSchema.pre('save', function() {
   const calculatedTotal = Number((this.litres * this.rate).toFixed(2));
   if (Math.abs(calculatedTotal - this.total) > 0.01) {
     this.total = calculatedTotal;
   }
   this.updatedAt = new Date();
-  next();
 });
 
 // Indexes
 consumerSaleSchema.index({ consumerId: 1, sale_date: -1 });
 consumerSaleSchema.index({ payment_status: 1 });
 consumerSaleSchema.index({ sale_date: -1 });
+
 
 module.exports = mongoose.model("ConsumerSale", consumerSaleSchema);

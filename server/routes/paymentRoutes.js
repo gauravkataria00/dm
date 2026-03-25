@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const mongoose = require("mongoose");
 const Payment = require("../models/Payment");
 const MilkEntry = require("../models/MilkEntry");
 const Advance = require("../models/Advance");
@@ -8,7 +9,7 @@ const Settlement = require("../models/Settlement");
 // Get all payments with client and settlement info
 router.get("/", async (req, res) => {
   try {
-    let payments = await Payment.find()
+    let payments = await Payment.find({ userId: req.user.id })
       .populate('clientId', 'name phone')
       .populate('settlementId', 'startDate endDate')
       .sort({ createdAt: -1 });
@@ -45,7 +46,7 @@ router.get("/", async (req, res) => {
 // Get payments for a specific client
 router.get("/client/:clientId", async (req, res) => {
   try {
-    let payments = await Payment.find({ clientId: req.params.clientId })
+    let payments = await Payment.find({ userId: req.user.id, clientId: req.params.clientId })
       .populate('clientId', 'name phone')
       .populate('settlementId', 'startDate endDate')
       .sort({ createdAt: -1 });
@@ -90,13 +91,13 @@ router.post("/", async (req, res) => {
 
     // Validate that client exists before saving
     const Client = require("../models/Client");
-    const client = await Client.findById(clientId);
+    const client = await Client.findOne({ _id: clientId, userId: req.user.id });
     if (!client) {
       console.error(`Invalid clientId: ${clientId}`);
       return res.status(400).json({ error: "Invalid client" });
     }
 
-    const payment = new Payment({ clientId, settlementId, amount, type, date, notes });
+    const payment = new Payment({ userId: req.user.id, clientId, settlementId, amount, type, date, notes });
     await payment.save();
 
     await payment.populate('clientId', 'name phone');
@@ -129,27 +130,28 @@ router.post("/", async (req, res) => {
 router.get("/summary/:clientId", async (req, res) => {
   try {
     const clientId = req.params.clientId;
-    const mongoose = require('mongoose');
+    const userObjectId = new mongoose.Types.ObjectId(req.user.id);
+    const clientObjectId = new mongoose.Types.ObjectId(clientId);
 
     const [totalEarned, totalPaid, advancesGiven, advancesRepaid, pendingSettlements] = await Promise.all([
       MilkEntry.aggregate([
-        { $match: { clientId: new mongoose.Types.ObjectId(clientId) } },
+        { $match: { userId: userObjectId, clientId: clientObjectId } },
         { $group: { _id: null, amount: { $sum: "$total" } } }
       ]),
       Payment.aggregate([
-        { $match: { clientId: new mongoose.Types.ObjectId(clientId), type: { $in: ['settlement_payment', 'advance_repaid'] } } },
+        { $match: { userId: userObjectId, clientId: clientObjectId, type: { $in: ['settlement_payment', 'advance_repaid'] } } },
         { $group: { _id: null, amount: { $sum: "$amount" } } }
       ]),
       Advance.aggregate([
-        { $match: { clientId: new mongoose.Types.ObjectId(clientId), status: 'active' } },
+        { $match: { userId: userObjectId, clientId: clientObjectId, status: 'active' } },
         { $group: { _id: null, amount: { $sum: "$amount" } } }
       ]),
       Payment.aggregate([
-        { $match: { clientId: new mongoose.Types.ObjectId(clientId), type: 'advance_repaid' } },
+        { $match: { userId: userObjectId, clientId: clientObjectId, type: 'advance_repaid' } },
         { $group: { _id: null, amount: { $sum: "$amount" } } }
       ]),
       Settlement.aggregate([
-        { $match: { clientId: new mongoose.Types.ObjectId(clientId), status: 'pending' } },
+        { $match: { userId: userObjectId, clientId: clientObjectId, status: 'pending' } },
         { $group: { _id: null, amount: { $sum: "$totalAmount" } } }
       ])
     ]);

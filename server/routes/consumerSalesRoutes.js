@@ -1,11 +1,12 @@
 const express = require("express");
 const router = express.Router();
+const mongoose = require("mongoose");
 const ConsumerSale = require("../models/ConsumerSale");
 
 // Get all consumer sales
 router.get("/", async (req, res) => {
   try {
-    let sales = await ConsumerSale.find()
+    let sales = await ConsumerSale.find({ userId: req.user.id })
       .populate('consumerId', 'name phone')
       .sort({ createdAt: -1 });
     
@@ -40,7 +41,7 @@ router.get("/", async (req, res) => {
 // Get sales for a specific consumer
 router.get("/consumer/:consumerId", async (req, res) => {
   try {
-    let sales = await ConsumerSale.find({ consumerId: req.params.consumerId })
+    let sales = await ConsumerSale.find({ userId: req.user.id, consumerId: req.params.consumerId })
       .populate('consumerId', 'name phone')
       .sort({ createdAt: -1 });
     
@@ -81,6 +82,7 @@ router.get("/today", async (req, res) => {
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     let sales = await ConsumerSale.find({
+      userId: req.user.id,
       createdAt: { $gte: today, $lt: tomorrow }
     })
       .populate('consumerId', 'name phone')
@@ -125,13 +127,14 @@ router.post("/", async (req, res) => {
 
     // Validate that consumer exists before saving
     const Consumer = require("../models/Consumer");
-    const consumer = await Consumer.findById(consumer_id);
+    const consumer = await Consumer.findOne({ _id: consumer_id, userId: req.user.id });
     if (!consumer) {
       console.error(`Invalid consumer_id: ${consumer_id}`);
       return res.status(400).json({ error: "Invalid consumer" });
     }
 
     const sale = new ConsumerSale({
+      userId: req.user.id,
       consumerId: consumer_id,
       type: 'milk',
       litres: quantity,
@@ -175,7 +178,7 @@ router.put("/:id/status", async (req, res) => {
       return res.status(400).json({ error: "payment_status is required" });
     }
 
-    const sale = await ConsumerSale.findByIdAndUpdate(req.params.id, { payment_status }, { new: true });
+    const sale = await ConsumerSale.findOneAndUpdate({ _id: req.params.id, userId: req.user.id }, { payment_status }, { new: true });
     if (!sale) {
       return res.status(404).json({ error: "Sale not found" });
     }
@@ -200,6 +203,7 @@ router.get("/summary/range", async (req, res) => {
     const summary = await ConsumerSale.aggregate([
       {
         $match: {
+          userId: new mongoose.Types.ObjectId(req.user.id),
           createdAt: {
             $gte: new Date(startDate),
             $lte: new Date(endDate)

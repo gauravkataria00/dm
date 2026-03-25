@@ -1,7 +1,12 @@
 import { useState } from "react";
-import { API_BASE_URL } from "../services/config";
+import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function Login() {
+  const { login, signup } = useAuth();
+  const { t } = useLanguage();
+  const [mode, setMode] = useState("login");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -13,29 +18,16 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          email,
-          password
-        })
-      });
-
-      const data = await res.json();
-
-      if (data.success) {
-        localStorage.setItem("adminToken", data.token);
-        window.location.href = "/";
-        return;
+      if (mode === "signup") {
+        await signup({ name, email, password });
+      } else {
+        await login({ email, password });
       }
 
-      setError("Invalid email or password");
+      window.location.hash = "#/dashboard";
     } catch (err) {
-      console.error(err);
-      setError("Server error");
+      console.error("Auth error:", err);
+      setError(err?.message || t.serverError);
     } finally {
       setIsLoading(false);
     }
@@ -45,38 +37,58 @@ export default function Login() {
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-4 transition-all duration-300">
       <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 transition-all duration-300">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-black dark:text-white mb-2 transition-all duration-300">🐄 Dairy Manager Pro</h1>
-          <p className="text-gray-600 dark:text-gray-300 transition-all duration-300">Admin Login</p>
+          <h1 className="text-3xl font-bold text-black dark:text-white mb-2 transition-all duration-300">🐄 {t.dairyManagerPro}</h1>
+          <p className="text-gray-600 dark:text-gray-300 transition-all duration-300">{mode === "signup" ? t.createAccount : t.login}</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-6">
+          {mode === "signup" && (
+            <div>
+              <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2 transition-all duration-300">
+                {t.name}
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-black dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300"
+                placeholder={t.yourName}
+                required
+                disabled={isLoading}
+                autoComplete="name"
+              />
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2 transition-all duration-300">
-              Email
+              {t.email}
             </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-black dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300"
-              placeholder="Himanshu@admin.com"
+              placeholder="name@example.com"
               required
               disabled={isLoading}
+              autoComplete="email"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2 transition-all duration-300">
-              Password
+              {t.password}
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-black dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300"
-              placeholder="Enter password"
+              placeholder={t.enterPassword}
               required
               disabled={isLoading}
+              autoComplete="current-password"
             />
           </div>
 
@@ -88,13 +100,24 @@ export default function Login() {
             {isLoading ? (
               <>
                 <span className="inline-block w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin" />
-                Processing...
+                {t.processing}
               </>
             ) : (
-              "Login"
+              mode === "signup" ? t.createAccount : t.login
             )}
           </button>
         </form>
+
+        <button
+          type="button"
+          onClick={() => {
+            setMode((prev) => (prev === "login" ? "signup" : "login"));
+            setError("");
+          }}
+          className="mt-4 w-full text-sm text-green-600 hover:text-green-700"
+        >
+          {mode === "login" ? t.noAccountSignUp : t.alreadyHaveAccountLogin}
+        </button>
 
         {error && (
           <p className="text-red-500 text-sm mt-4 text-center transition-all duration-300">{error}</p>

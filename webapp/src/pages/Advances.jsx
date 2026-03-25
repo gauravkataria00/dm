@@ -1,8 +1,11 @@
 import MainLayout from "../components/layout/MainLayout";
 import { useEffect, useState } from "react";
 import { getAdvances, getClients, createAdvance, updateAdvanceStatus } from "../services/api";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function Advances() {
+  const { language } = useLanguage();
+  const tr = (hi, en) => (language === "hi" ? hi : en);
   const [advances, setAdvances] = useState([]);
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -54,12 +57,12 @@ export default function Advances() {
     e.preventDefault();
     
     if (!formData.clientId) {
-      alert("Please select a client");
+      alert(tr("कृपया ग्राहक चुनें", "Please select a client"));
       return;
     }
     
     if (!formData.amount || Number(formData.amount) <= 0) {
-      alert("Please enter a valid amount");
+      alert(tr("कृपया सही राशि लिखें", "Please enter a valid amount"));
       return;
     }
     
@@ -75,7 +78,7 @@ export default function Advances() {
       loadData();
     } catch (error) {
       console.error("Error creating advance:", error);
-      alert("Failed to create advance");
+      alert(tr("एडवांस बनाने में समस्या", "Failed to create advance"));
     }
   };
 
@@ -106,7 +109,7 @@ export default function Advances() {
   if (loading) {
     return (
       <MainLayout>
-        <div className="p-8 text-center text-gray-500">Loading advances...</div>
+        <div className="p-8 text-center text-gray-500">{tr("एडवांस डेटा लोड हो रहा है...", "Loading advances...")}</div>
       </MainLayout>
     );
   }
@@ -116,14 +119,14 @@ export default function Advances() {
       <div className="mb-8">
         <div className="flex justify-between items-center flex-col sm:flex-row gap-4">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Advances</h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-2">Manage advances given to clients</p>
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">{tr("एडवांस प्रबंधन", "Advances")}</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">{tr("ग्राहकों को दिए गए एडवांस यहां संभालें।", "Manage advances given to clients")}</p>
           </div>
           <button
             onClick={() => setShowCreateForm(true)}
             className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-xl whitespace-nowrap"
           >
-            Give Advance
+            {tr("नया एडवांस दें", "Give Advance")}
           </button>
         </div>
       </div>
@@ -132,25 +135,25 @@ export default function Advances() {
       <div className="bg-white dark:bg-gray-900 text-black dark:text-white rounded-xl shadow-md p-6 mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Active Advances Summary</h2>
-            <p className="text-gray-600 dark:text-gray-400">Total outstanding advances to clients</p>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">{tr("सक्रिय एडवांस सारांश", "Active Advances Summary")}</h2>
+            <p className="text-gray-600 dark:text-gray-400">{tr("ग्राहकों पर कुल चल रहा एडवांस", "Total outstanding advances to clients")}</p>
           </div>
           <div className="text-right">
             <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">₹{getActiveAdvancesTotal().toFixed(2)}</div>
-            <div className="text-sm text-gray-500 dark:text-gray-500">Active Advances</div>
+            <div className="text-sm text-gray-500 dark:text-gray-500">{tr("कुल सक्रिय एडवांस", "Active Advances")}</div>
           </div>
         </div>
       </div>
 
       {showCreateForm && (
         <div className="bg-white dark:bg-gray-900 text-black dark:text-white rounded-xl shadow-lg p-6 mb-6 border border-gray-200 dark:border-gray-800">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Give New Advance</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">{tr("नया एडवांस दर्ज करें", "Give New Advance")}</h2>
           <form onSubmit={handleCreateAdvance} className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">Client *</label>
+              <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">{tr("ग्राहक", "Client")} *</label>
               {clients?.length === 0 ? (
                 <div className="w-full px-4 py-3 text-gray-500 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600">
-                  No clients available
+                  {tr("कोई ग्राहक उपलब्ध नहीं", "No clients available")}
                 </div>
               ) : (
                 <select
@@ -159,7 +162,7 @@ export default function Advances() {
                   className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition"
                   required
                 >
-                  <option value="">Select Client</option>
+                  <option value="">{tr("ग्राहक चुनें", "Select Client")}</option>
                   {clients?.map(client => (
                     <option key={client?.id} value={client?.id || client?._id}>
                       {client?.name || "N/A"} ({client?.phone || "-"})
@@ -169,19 +172,19 @@ export default function Advances() {
               )}
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">Amount (₹) *</label>
+              <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">{tr("राशि", "Amount")} (₹) *</label>
               <input
                 type="number"
                 step="0.01"
                 value={formData.amount}
                 onChange={(e) => setFormData({...formData, amount: e.target.value})}
                 className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition"
-                placeholder="Enter amount"
+                placeholder={tr("राशि लिखें", "Enter amount")}
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">Date</label>
+              <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">{tr("तारीख", "Date")}</label>
               <input
                 type="date"
                 value={formData.date}
@@ -191,13 +194,13 @@ export default function Advances() {
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">Purpose</label>
+              <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">{tr("कारण", "Purpose")}</label>
               <input
                 type="text"
                 value={formData.purpose}
                 onChange={(e) => setFormData({...formData, purpose: e.target.value})}
                 className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition"
-                placeholder="e.g., Medical emergency, Farm expenses"
+                placeholder={tr("जैसे: मेडिकल, चारा, फार्म खर्च", "e.g., Medical emergency, Farm expenses")}
               />
             </div>
             <div className="md:col-span-2 flex gap-3">
@@ -206,14 +209,14 @@ export default function Advances() {
                 disabled={clients?.length === 0}
                 className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Give Advance
+                {tr("एडवांस सेव करें", "Give Advance")}
               </button>
               <button
                 type="button"
                 onClick={() => setShowCreateForm(false)}
                 className="bg-gray-400 hover:bg-gray-500 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-200 shadow-md hover:shadow-lg"
               >
-                Cancel
+                {tr("रद्द करें", "Cancel")}
               </button>
             </div>
           </form>
@@ -222,12 +225,12 @@ export default function Advances() {
 
       <div className="bg-white dark:bg-gray-900 text-black dark:text-white rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-800">
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Advance History</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">{tr("एडवांस इतिहास", "Advance History")}</h2>
         </div>
         {advances?.length === 0 ? (
           <div className="px-6 py-12 text-center">
-            <div className="text-gray-400 dark:text-gray-500 text-lg mb-2">📋 No advances recorded yet</div>
-            <p className="text-gray-500 dark:text-gray-400">Give your first advance to get started</p>
+            <div className="text-gray-400 dark:text-gray-500 text-lg mb-2">{tr("📋 अभी तक कोई एडवांस दर्ज नहीं", "📋 No advances recorded yet")}</div>
+            <p className="text-gray-500 dark:text-gray-400">{tr("शुरू करने के लिए पहला एडवांस दर्ज करें", "Give your first advance to get started")}</p>
           </div>
         ) : (
           <div className="overflow-x-auto w-full">
@@ -235,22 +238,22 @@ export default function Advances() {
               <thead className="bg-gray-100 dark:bg-gray-800">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                    Client
+                    {tr("ग्राहक", "Client")}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                    Amount
+                    {tr("राशि", "Amount")}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                    Date
+                    {tr("तारीख", "Date")}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                    Purpose
+                    {tr("कारण", "Purpose")}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                    Status
+                    {tr("स्थिति", "Status")}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                    Actions
+                    {tr("कार्रवाई", "Actions")}
                   </th>
                 </tr>
               </thead>
@@ -280,7 +283,7 @@ export default function Advances() {
                           onClick={() => handleStatusUpdate(advance?.id, 'repaid')}
                           className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 font-semibold transition"
                         >
-                          Mark Repaid
+                          {tr("वापस हुआ मार्क करें", "Mark Repaid")}
                         </button>
                       )}
                     </td>

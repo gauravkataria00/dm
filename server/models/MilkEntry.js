@@ -1,6 +1,12 @@
 const mongoose = require("mongoose");
 
 const milkEntrySchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+    index: true,
+  },
   clientId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Client',
@@ -63,14 +69,13 @@ const milkEntrySchema = new mongoose.Schema({
 });
 
 // Pre-save hook to validate and calculate total
-milkEntrySchema.pre('save', function(next) {
+milkEntrySchema.pre('save', function() {
   // Validate total = litres * rate
   const calculatedTotal = Number((this.litres * this.rate).toFixed(2));
   if (Math.abs(calculatedTotal - this.total) > 0.01) {
     this.total = calculatedTotal;
   }
   this.updatedAt = new Date();
-  next();
 });
 
 // Compound index for faster queries

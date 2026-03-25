@@ -2,6 +2,8 @@
 
 A comprehensive web application for managing dairy farm operations, including client management, milk entry tracking, and financial reporting.
 
+Production deployment checklist: [PRODUCTION_DEPLOYMENT_CHECKLIST.md](PRODUCTION_DEPLOYMENT_CHECKLIST.md)
+
 ## Features
 
 - **Client Management**: Add, view, and manage dairy farm clients

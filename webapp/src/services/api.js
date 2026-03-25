@@ -2,6 +2,26 @@ import { API_BASE_URL } from "./config";
 
 const API_BASE_URL_WITH_API = `${API_BASE_URL}/api`;
 
+const nativeFetch = window.fetch.bind(window);
+
+const authFetch = (url, options = {}) => {
+  const token = localStorage.getItem("adminToken");
+  const headers = {
+    ...(options.headers || {}),
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  return nativeFetch(url, {
+    ...options,
+    headers,
+  });
+};
+
+const fetch = authFetch;
+
 // Get all clients
 export const getClients = async () => {
   try {

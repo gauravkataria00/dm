@@ -8,17 +8,18 @@ const validatePhoneNumber = (phone) => /^\d{10}$/.test(phone);
 // Get all clients with pagination
 router.get("/", async (req, res) => {
   try {
+    const userId = req.user.id;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
     const [clients, total] = await Promise.all([
-      Client.find()
+      Client.find({ userId })
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean(),
-      Client.countDocuments()
+      Client.countDocuments({ userId })
     ]);
 
     res.json({
@@ -45,7 +46,7 @@ router.get("/", async (req, res) => {
 // Get single client
 router.get("/:id", async (req, res) => {
   try {
-    const client = await Client.findById(req.params.id);
+    const client = await Client.findOne({ _id: req.params.id, userId: req.user.id });
     if (!client) return res.status(404).json({ error: "Client not found" });
     
     res.json({
@@ -75,6 +76,7 @@ router.post("/", async (req, res) => {
     }
 
     const client = new Client({
+      userId: req.user.id,
       name: name.trim(),
       phone: phone.trim(),
       address: address ? address.trim() : ""
@@ -119,8 +121,8 @@ router.put("/:id", async (req, res) => {
     if (phone) updateData.phone = phone.trim();
     if (address !== undefined) updateData.address = address ? address.trim() : "";
 
-    const client = await Client.findByIdAndUpdate(
-      req.params.id,
+    const client = await Client.findOneAndUpdate(
+      { _id: req.params.id, userId: req.user.id },
       updateData,
       { new: true, runValidators: true }
     );
@@ -148,7 +150,7 @@ router.put("/:id", async (req, res) => {
 // Delete client
 router.delete("/:id", async (req, res) => {
   try {
-    const client = await Client.findByIdAndDelete(req.params.id);
+    const client = await Client.findOneAndDelete({ _id: req.params.id, userId: req.user.id });
     if (!client) return res.status(404).json({ error: "Client not found" });
     
     res.json({ success: true, message: "Client deleted successfully" });

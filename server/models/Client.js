@@ -1,6 +1,12 @@
 const mongoose = require("mongoose");
 
 const clientSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+    index: true,
+  },
   name: {
     type: String,
     required: [true, "Client name is required"],
@@ -29,9 +35,8 @@ const clientSchema = new mongoose.Schema({
 });
 
 // Pre-save hook to validate and sanitize
-clientSchema.pre('save', function(next) {
+clientSchema.pre('save', function() {
   this.updatedAt = new Date();
-  next();
 });
 
 // Index for faster queries

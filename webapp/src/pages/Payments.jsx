@@ -1,8 +1,11 @@
 import MainLayout from "../components/layout/MainLayout";
 import { useEffect, useState } from "react";
 import { getPayments, getClients, getSettlements, createPayment, getClientPaymentSummary } from "../services/api";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function Payments() {
+  const { language } = useLanguage();
+  const tr = (hi, en) => (language === "hi" ? hi : en);
   const [payments, setPayments] = useState([]);
   const [clients, setClients] = useState([]);
   const [settlements, setSettlements] = useState([]);
@@ -49,7 +52,7 @@ export default function Payments() {
       setClientSummaries(summaries);
     } catch (error) {
       console.error("Error loading data:", error);
-      setError("Failed to load data. Please check your connection and try again.");
+      setError(tr("डेटा लोड नहीं हुआ। कनेक्शन जांचकर फिर कोशिश करें।", "Failed to load data. Please check your connection and try again."));
     } finally {
       setLoading(false);
     }
@@ -61,7 +64,9 @@ export default function Payments() {
       await createPayment(formData);
       const client = clients.find(c => c.id === formData.clientId);
       if (client && client.phone) {
-        const message = `Payment of ₹${formData.amount} received on ${formData.date}. Notes: ${formData.notes || 'None'}`;
+        const message = language === "hi"
+          ? `₹${formData.amount} का भुगतान ${formData.date} को दर्ज हुआ। नोट: ${formData.notes || 'कोई नहीं'}`
+          : `Payment of ₹${formData.amount} received on ${formData.date}. Notes: ${formData.notes || 'None'}`;
         let phone = client.phone;
         if (!phone.startsWith('+')) {
           phone = '+91' + phone;
@@ -115,7 +120,7 @@ export default function Payments() {
   if (loading) {
     return (
       <MainLayout>
-        <div className="p-8 text-center text-gray-500">Loading payments...</div>
+        <div className="p-8 text-center text-gray-500">{tr("भुगतान लोड हो रहे हैं...", "Loading payments...")}</div>
       </MainLayout>
     );
   }
@@ -129,7 +134,7 @@ export default function Payments() {
             onClick={loadData}
             className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
           >
-            Retry
+            {tr("दोबारा कोशिश करें", "Retry")}
           </button>
         </div>
       </MainLayout>
@@ -141,14 +146,14 @@ export default function Payments() {
       <div className="mb-8">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Payments</h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-2">Track all payment transactions and client balances</p>
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">{tr("भुगतान प्रबंधन", "Payments")}</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">{tr("सभी भुगतान और बकाया स्थिति यहां देखें।", "Track all payment transactions and client balances")}</p>
           </div>
           <button
             onClick={() => setShowCreateForm(true)}
             className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition"
           >
-            Record Payment
+            {tr("नया भुगतान दर्ज करें", "Record Payment")}
           </button>
         </div>
       </div>
@@ -162,28 +167,30 @@ export default function Payments() {
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{client.name}</h3>
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Total Earned:</span>
+                  <span className="text-gray-600 dark:text-gray-400">{tr("कुल कमाई:", "Total Earned:")}</span>
                   <span className="font-medium text-gray-900 dark:text-white">₹{summary.totalEarned?.toFixed(2) || '0.00'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Total Paid:</span>
+                  <span className="text-gray-600 dark:text-gray-400">{tr("कुल भुगतान:", "Total Paid:")}</span>
                   <span className="font-medium text-gray-900 dark:text-white">₹{summary.totalPaid?.toFixed(2) || '0.00'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Advances:</span>
+                  <span className="text-gray-600 dark:text-gray-400">{tr("एडवांस:", "Advances:")}</span>
                   <span className="font-medium text-gray-900 dark:text-white">₹{summary.advancesGiven?.toFixed(2) || '0.00'}</span>
                 </div>
                 <hr className="my-2 border-gray-300 dark:border-gray-600" />
                 <div className="flex justify-between font-bold">
-                  <span className="text-gray-900 dark:text-white">Net Balance:</span>
+                  <span className="text-gray-900 dark:text-white">{tr("नेट बैलेंस:", "Net Balance:")}</span>
                   <span className={summary.netOutstanding > 0 ? 'text-green-600 dark:text-green-400' : summary.netOutstanding < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}>
                     ₹{summary.netOutstanding?.toFixed(2) || '0.00'}
                   </span>
                 </div>
                 <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                  {summary.status === 'owed_to_client' ? '💰 Amount to pay client' :
-                   summary.status === 'client_owes' ? '📉 Client owes money' :
-                   '✅ Settled'}
+                  {summary.status === 'owed_to_client'
+                    ? tr('💰 ग्राहक को भुगतान देना है', '💰 Amount to pay client')
+                    : summary.status === 'client_owes'
+                    ? tr('📉 ग्राहक का पैसा लेना है', '📉 Client owes money')
+                    : tr('✅ हिसाब बराबर', '✅ Settled')}
                 </div>
               </div>
             </div>
@@ -193,44 +200,44 @@ export default function Payments() {
 
       {showCreateForm && (
         <div className="bg-white dark:bg-gray-900 text-black dark:text-white rounded-xl shadow-md p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Record New Payment</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{tr("नया भुगतान दर्ज करें", "Record New Payment")}</h2>
           <form onSubmit={handleCreatePayment} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">Client</label>
+              <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">{tr("ग्राहक", "Client")}</label>
               <select
                 value={formData.clientId}
                 onChange={(e) => setFormData({...formData, clientId: e.target.value, settlementId: ""})}
                 className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
                 required
               >
-                <option value="">Select Client</option>
+                <option value="">{tr("ग्राहक चुनें", "Select Client")}</option>
                 {clients.map(client => (
                   <option key={client.id} value={client.id}>{client.name}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">Payment Type</label>
+              <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">{tr("भुगतान प्रकार", "Payment Type")}</label>
               <select
                 value={formData.type}
                 onChange={(e) => setFormData({...formData, type: e.target.value})}
                 className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
                 required
               >
-                <option value="settlement_payment">Settlement Payment</option>
-                <option value="advance_given">Advance Given</option>
-                <option value="advance_repaid">Advance Repaid</option>
+                <option value="settlement_payment">{tr("सेटलमेंट भुगतान", "Settlement Payment")}</option>
+                <option value="advance_given">{tr("एडवांस दिया", "Advance Given")}</option>
+                <option value="advance_repaid">{tr("एडवांस वापस", "Advance Repaid")}</option>
               </select>
             </div>
             {formData.type === 'settlement_payment' && formData.clientId && (
               <div>
-                <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">Settlement</label>
+                <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">{tr("सेटलमेंट", "Settlement")}</label>
                 <select
                   value={formData.settlementId}
                   onChange={(e) => setFormData({...formData, settlementId: e.target.value})}
                   className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
                 >
-                  <option value="">Select Settlement (Optional)</option>
+                  <option value="">{tr("सेटलमेंट चुनें (वैकल्पिक)", "Select Settlement (Optional)")}</option>
                   {settlements.filter(s => s.clientId == formData.clientId && s.status === 'pending').map(settlement => (
                     <option key={settlement.id} value={settlement.id}>
                       {settlement.startDate} - {settlement.endDate} (₹{settlement.totalAmount})
@@ -240,7 +247,7 @@ export default function Payments() {
               </div>
             )}
             <div>
-              <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">Amount (₹)</label>
+              <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">{tr("राशि", "Amount")} (₹)</label>
               <input
                 type="number"
                 step="0.01"
@@ -251,7 +258,7 @@ export default function Payments() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">Date</label>
+              <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">{tr("तारीख", "Date")}</label>
               <input
                 type="date"
                 value={formData.date}
@@ -261,13 +268,13 @@ export default function Payments() {
               />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">Notes</label>
+              <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">{tr("नोट्स", "Notes")}</label>
               <textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({...formData, notes: e.target.value})}
                 className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
                 rows="3"
-                placeholder="Optional notes..."
+                placeholder={tr("वैकल्पिक नोट्स...", "Optional notes...")}
               />
             </div>
             <div className="md:col-span-2 flex gap-2">
@@ -275,14 +282,14 @@ export default function Payments() {
                 type="submit"
                 className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition"
               >
-                Record Payment
+                {tr("भुगतान दर्ज करें", "Record Payment")}
               </button>
               <button
                 type="button"
                 onClick={() => setShowCreateForm(false)}
                 className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded transition"
               >
-                Cancel
+                {tr("रद्द करें", "Cancel")}
               </button>
             </div>
           </form>
@@ -291,26 +298,26 @@ export default function Payments() {
 
       <div className="bg-white dark:bg-gray-900 text-black dark:text-white rounded-xl shadow-md overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Payment History</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">{tr("भुगतान इतिहास", "Payment History")}</h2>
         </div>
         <div className="overflow-x-auto w-full">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Client
+                  {tr("ग्राहक", "Client")}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Type
+                  {tr("प्रकार", "Type")}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Amount
+                  {tr("राशि", "Amount")}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
+                  {tr("तारीख", "Date")}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Notes
+                  {tr("नोट्स", "Notes")}
                 </th>
               </tr>
             </thead>
@@ -341,7 +348,7 @@ export default function Payments() {
         </div>
         {payments.length === 0 && (
           <div className="px-6 py-8 text-center text-gray-500">
-            No payments recorded yet. Record your first payment to get started.
+            {tr("अभी तक कोई भुगतान दर्ज नहीं है। शुरू करने के लिए पहला भुगतान दर्ज करें।", "No payments recorded yet. Record your first payment to get started.")}
           </div>
         )}
       </div>

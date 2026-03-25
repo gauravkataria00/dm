@@ -1,11 +1,12 @@
 const express = require("express");
 const router = express.Router();
+const mongoose = require("mongoose");
 const ConsumerPayment = require("../models/ConsumerPayment");
 
 // Get all consumer payments
 router.get("/", async (req, res) => {
   try {
-    let payments = await ConsumerPayment.find()
+    let payments = await ConsumerPayment.find({ userId: req.user.id })
       .populate('consumerId', 'name phone')
       .sort({ createdAt: -1 });
     
@@ -38,7 +39,7 @@ router.get("/", async (req, res) => {
 // Get payments for a specific consumer
 router.get("/consumer/:consumerId", async (req, res) => {
   try {
-    let payments = await ConsumerPayment.find({ consumerId: req.params.consumerId })
+    let payments = await ConsumerPayment.find({ userId: req.user.id, consumerId: req.params.consumerId })
       .populate('consumerId', 'name phone')
       .sort({ createdAt: -1 });
     
@@ -86,13 +87,14 @@ router.post("/", async (req, res) => {
 
     // Validate that consumer exists before saving
     const Consumer = require("../models/Consumer");
-    const consumer = await Consumer.findById(finalConsumerId);
+    const consumer = await Consumer.findOne({ _id: finalConsumerId, userId: req.user.id });
     if (!consumer) {
       console.error(`Invalid consumer_id: ${finalConsumerId}`);
       return res.status(400).json({ error: "Invalid consumer - consumer does not exist" });
     }
 
     const payment = new ConsumerPayment({
+      userId: req.user.id,
       consumerId: finalConsumerId,
       amount,
       date: new Date(finalDate),
@@ -126,9 +128,8 @@ router.post("/", async (req, res) => {
 // Get payment summary for a consumer
 router.get("/summary/:consumerId", async (req, res) => {
   try {
-    const mongoose = require('mongoose');
     const summary = await ConsumerPayment.aggregate([
-      { $match: { consumerId: new mongoose.Types.ObjectId(req.params.consumerId) } },
+      { $match: { userId: new mongoose.Types.ObjectId(req.user.id), consumerId: new mongoose.Types.ObjectId(req.params.consumerId) } },
       {
         $group: {
           _id: null,

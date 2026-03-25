@@ -1,6 +1,12 @@
 const mongoose = require("mongoose");
 
 const paymentSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+    index: true,
+  },
   clientId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Client',
@@ -44,9 +50,8 @@ const paymentSchema = new mongoose.Schema({
 });
 
 // Pre-save hook
-paymentSchema.pre('save', function(next) {
+paymentSchema.pre('save', function() {
   this.updatedAt = new Date();
-  next();
 });
 
 // Indexes for faster queries

@@ -2,8 +2,11 @@ import MainLayout from "../components/layout/MainLayout";
 import { useEffect, useState } from "react";
 import { getClients } from "../services/api";
 import { useToast } from "../context/ToastContext";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function Reports() {
+  const { language } = useLanguage();
+  const tr = (hi, en) => (language === "hi" ? hi : en);
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const { push } = useToast();
@@ -14,7 +17,7 @@ export default function Reports() {
         const data = await getClients();
         setClients(data);
       } catch {
-        push("Failed to load report data", "error");
+        push(tr("रिपोर्ट डेटा लोड नहीं हुआ", "Failed to load report data"), "error");
       } finally {
         setLoading(false);
       }
@@ -32,7 +35,7 @@ export default function Reports() {
     a.download = "clients_report.csv";
     a.click();
     URL.revokeObjectURL(url);
-    push("Exported clients_report.csv", "success");
+    push(tr("रिपोर्ट डाउनलोड हो गई", "Exported clients_report.csv"), "success");
   };
 
   // Simple trend: clients over time (counts per month)
@@ -47,21 +50,21 @@ export default function Reports() {
   return (
     <MainLayout>
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Reports</h1>
-        <p className="text-gray-600">Export and view client/register reports.</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{tr("रिपोर्ट", "Reports")}</h1>
+        <p className="text-gray-600 dark:text-gray-400">{tr("ग्राहक रिपोर्ट देखें और डाउनलोड करें।", "Export and view client/register reports.")}</p>
       </div>
 
       <div className="flex items-center justify-between mb-4">
         <div></div>
-        <button onClick={exportCSV} className="px-4 py-2 bg-indigo-600 text-white rounded">Export CSV</button>
+        <button onClick={exportCSV} className="px-4 py-2 bg-indigo-600 text-white rounded-lg">{tr("CSV डाउनलोड करें", "Export CSV")}</button>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold mb-4">Client Registrations (by month)</h2>
+      <div className="bg-white dark:bg-gray-900 dark:text-white rounded-xl shadow p-6">
+        <h2 className="text-lg font-semibold mb-4">{tr("महीने के हिसाब से नए ग्राहक", "Client Registrations (by month)")}</h2>
         {loading ? (
-          <div className="text-gray-500">Loading...</div>
+          <div className="text-gray-500 dark:text-gray-400">{tr("लोड हो रहा है...", "Loading...")}</div>
         ) : labels.length === 0 ? (
-          <div className="text-gray-500">No data available</div>
+          <div className="text-gray-500 dark:text-gray-400">{tr("कोई डेटा उपलब्ध नहीं है", "No data available")}</div>
         ) : (
           <div className="w-full">
             <svg viewBox={`0 0 ${labels.length*60} 120`} className="w-full h-36">
