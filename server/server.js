@@ -8,6 +8,17 @@ const sqlite3 = require("sqlite3").verbose();
 const path = require("path");
 require("dotenv").config();
 
+// ⚠️ VALIDATE CRITICAL ENV VARS BEFORE LOADING ROUTES
+console.log(`[STARTUP] NODE_ENV: ${process.env.NODE_ENV}`);
+console.log(`[STARTUP] DB_TYPE: ${process.env.DB_TYPE}`);
+console.log(`[STARTUP] JWT_SECRET present: ${!!process.env.JWT_SECRET}`);
+console.log(`[STARTUP] MONGODB_URI present: ${!!process.env.MONGODB_URI}`);
+
+if (process.env.NODE_ENV === "production" && !process.env.JWT_SECRET) {
+  console.error("❌ FATAL: JWT_SECRET is required in production. Set env var and restart.");
+  process.exit(1);
+}
+
 const { authenticate, requireCsrf } = require("./middleware/authMiddleware");
 const { requestContextMiddleware } = require("./middleware/requestContext");
 
