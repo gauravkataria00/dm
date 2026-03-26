@@ -1,10 +1,11 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useLanguage } from "../../context/LanguageContext";
 import { useAuth } from "../../context/AuthContext";
 
 export default function MainLayout({ children }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const { language, setLanguage, t } = useLanguage();
   const { logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -104,7 +105,7 @@ export default function MainLayout({ children }) {
             <button
               onClick={async () => {
                 await logout();
-                window.location.hash = "#/login";
+                navigate("/login", { replace: true });
               }}
               className="text-sm text-white bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition"
             >

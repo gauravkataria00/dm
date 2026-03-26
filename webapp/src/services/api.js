@@ -1,22 +1,43 @@
 import { API_BASE_URL } from "./config";
 
 const API_BASE_URL_WITH_API = `${API_BASE_URL}/api`;
+const AUTH_UNAUTHORIZED_EVENT = "app:auth-unauthorized";
+const CSRF_COOKIE_NAME = import.meta.env.VITE_CSRF_COOKIE_NAME || "dm_csrf";
 
 const nativeFetch = window.fetch.bind(window);
 
+const readCookie = (name) => {
+  const source = `; ${document.cookie}`;
+  const parts = source.split(`; ${name}=`);
+  if (parts.length < 2) return "";
+  return decodeURIComponent(parts.pop().split(";").shift() || "");
+};
+
+const isWriteMethod = (method) => !["GET", "HEAD", "OPTIONS"].includes(String(method || "GET").toUpperCase());
+
 const authFetch = (url, options = {}) => {
-  const token = localStorage.getItem("adminToken");
+  const method = options.method || "GET";
   const headers = {
     ...(options.headers || {}),
   };
 
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
+  if (isWriteMethod(method)) {
+    const csrfToken = readCookie(CSRF_COOKIE_NAME);
+    if (csrfToken) {
+      headers["X-CSRF-Token"] = csrfToken;
+    }
   }
 
   return nativeFetch(url, {
     ...options,
     headers,
+    credentials: "include",
+  }).then((response) => {
+    if (response.status === 401) {
+      window.dispatchEvent(new CustomEvent(AUTH_UNAUTHORIZED_EVENT));
+    }
+
+    return response;
   });
 };
 

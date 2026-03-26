@@ -1,22 +1,85 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 const User = require("../models/User");
-const { authenticate } = require("../middleware/authMiddleware");
+const {
+  authenticate,
+  requireCsrf,
+  AUTH_COOKIE_NAME,
+  CSRF_COOKIE_NAME,
+  hashCsrfToken,
+} = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-const JWT_SECRET = process.env.JWT_SECRET || "dev-insecure-secret-change-in-production";
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
+const COOKIE_SAMESITE = String(process.env.AUTH_COOKIE_SAMESITE || "lax").toLowerCase();
 
-const signToken = (user) =>
+if (!JWT_SECRET && process.env.NODE_ENV === "production") {
+  throw new Error("JWT_SECRET is required in production");
+}
+
+if (!["lax", "strict"].includes(COOKIE_SAMESITE)) {
+  throw new Error("AUTH_COOKIE_SAMESITE must be either 'lax' or 'strict'");
+}
+
+const parseJwtExpiryMs = (token) => {
+  try {
+    const payload = jwt.decode(token);
+    if (!payload?.exp) return undefined;
+    const expiryMs = Number(payload.exp) * 1000 - Date.now();
+    return expiryMs > 0 ? expiryMs : 0;
+  } catch {
+    return undefined;
+  }
+};
+
+const getCookieDomain = () => {
+  const raw = process.env.AUTH_COOKIE_DOMAIN;
+  if (!raw) return undefined;
+  return String(raw).trim() || undefined;
+};
+
+const baseCookieOptions = (maxAge) => ({
+  secure: IS_PRODUCTION ? true : false,
+  sameSite: COOKIE_SAMESITE,
+  path: "/",
+  domain: getCookieDomain(),
+  ...(typeof maxAge === "number" ? { maxAge } : {}),
+});
+
+const setAuthCookies = (res, token, csrfToken) => {
+  const maxAge = parseJwtExpiryMs(token);
+  res.cookie(AUTH_COOKIE_NAME, token, {
+    ...baseCookieOptions(maxAge),
+    httpOnly: true,
+  });
+
+  res.cookie(CSRF_COOKIE_NAME, csrfToken, {
+    ...baseCookieOptions(maxAge),
+    httpOnly: false,
+  });
+};
+
+const clearAuthCookies = (res) => {
+  const options = baseCookieOptions();
+  res.clearCookie(AUTH_COOKIE_NAME, options);
+  res.clearCookie(CSRF_COOKIE_NAME, options);
+};
+
+const signToken = (user, csrfHash) =>
   jwt.sign(
     {
       sub: String(user._id),
       email: user.email,
       name: user.name,
+      csrf: csrfHash,
     },
-    JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
+    JWT_SECRET || "dev-insecure-secret-change-in-production",
+    { expiresIn: JWT_EXPIRES_IN }
   );
 
 router.post("/signup", async (req, res) => {
@@ -44,11 +107,13 @@ router.post("/signup", async (req, res) => {
       password: hashedPassword,
     });
 
-    const token = signToken(user);
+    const csrfToken = crypto.randomBytes(32).toString("hex");
+    const token = signToken(user, hashCsrfToken(csrfToken));
+    setAuthCookies(res, token, csrfToken);
 
     return res.status(201).json({
       success: true,
-      token,
+      expiresIn: JWT_EXPIRES_IN,
       user: {
         id: user._id,
         name: user.name,
@@ -80,10 +145,13 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    const token = signToken(user);
+    const csrfToken = crypto.randomBytes(32).toString("hex");
+    const token = signToken(user, hashCsrfToken(csrfToken));
+    setAuthCookies(res, token, csrfToken);
+
     return res.json({
       success: true,
-      token,
+      expiresIn: JWT_EXPIRES_IN,
       user: {
         id: user._id,
         name: user.name,
@@ -110,7 +178,8 @@ router.get("/me", authenticate, async (req, res) => {
   }
 });
 
-router.post("/logout", (req, res) => {
+router.post("/logout", authenticate, requireCsrf, (req, res) => {
+  clearAuthCookies(res);
   res.json({ success: true, message: "Logged out" });
 });
 

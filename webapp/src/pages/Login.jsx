@@ -1,16 +1,37 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 
 export default function Login() {
-  const { login, signup } = useAuth();
+  const { login, signup, isAuthenticated, loading } = useAuth();
   const { t } = useLanguage();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [mode, setMode] = useState("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  const redirectTarget = useMemo(() => {
+    const from = location.state?.from;
+    if (!from || typeof from !== "object") {
+      return "/dashboard";
+    }
+
+    const pathname = from.pathname || "/dashboard";
+    const search = from.search || "";
+    const hash = from.hash || "";
+    return `${pathname}${search}${hash}`;
+  }, [location.state]);
+
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      navigate(redirectTarget, { replace: true });
+    }
+  }, [loading, isAuthenticated, navigate, redirectTarget]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -23,8 +44,6 @@ export default function Login() {
       } else {
         await login({ email, password });
       }
-
-      window.location.hash = "#/dashboard";
     } catch (err) {
       console.error("Auth error:", err);
       setError(err?.message || t.serverError);
@@ -32,6 +51,14 @@ export default function Login() {
       setIsLoading(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-4">
+        <div className="text-gray-600 dark:text-gray-300">{t.processing}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-4 transition-all duration-300">
@@ -88,7 +115,7 @@ export default function Login() {
               placeholder={t.enterPassword}
               required
               disabled={isLoading}
-              autoComplete="current-password"
+                autoComplete={mode === "signup" ? "new-password" : "current-password"}
             />
           </div>
 

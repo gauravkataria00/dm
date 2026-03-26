@@ -1,4 +1,4 @@
-import { HashRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import Dashboard from "../pages/Dashboard";
 import Clients from "../pages/Clients";
@@ -14,7 +14,7 @@ import ProtectedRoute from "../components/ProtectedRoute";
 
 export default function AppRoutes() {
   return (
-    <HashRouter>
+    <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -27,7 +27,8 @@ export default function AppRoutes() {
         <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
         <Route path="/advances" element={<ProtectedRoute><Advances /></ProtectedRoute>} />
         <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
-    </HashRouter>
+    </BrowserRouter>
   );
 }

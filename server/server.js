@@ -2,12 +2,13 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
+const cookieParser = require("cookie-parser");
 const mongoose = require("mongoose");
 const sqlite3 = require("sqlite3").verbose();
 const path = require("path");
 require("dotenv").config();
 
-const { authenticate } = require("./middleware/authMiddleware");
+const { authenticate, requireCsrf } = require("./middleware/authMiddleware");
 const { requestContextMiddleware } = require("./middleware/requestContext");
 
 const clientRoutes = require("./routes/clientRoutes");
@@ -23,6 +24,7 @@ const authRoutes = require("./routes/authRoutes");
 
 const app = express();
 app.disable("x-powered-by");
+app.set("trust proxy", 1);
 
 // CORS Configuration - Restrict to frontend domain
 const allowedOrigins = String(
@@ -39,10 +41,13 @@ app.use(cors({
     }
     return callback(new Error("CORS blocked for this origin"));
   },
-  credentials: true
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-CSRF-Token"],
 }));
 app.use(helmet());
 app.use(express.json({ limit: "100kb" }));
+app.use(cookieParser(process.env.COOKIE_SECRET || "dev-cookie-secret"));
 app.use(
   "/api",
   rateLimit({
@@ -267,6 +272,10 @@ function startServer(port) {
 // ========================
 
 if (!process.env.JWT_SECRET) {
+  if (process.env.NODE_ENV === "production") {
+    console.error("❌ JWT_SECRET is required in production.");
+    process.exit(1);
+  }
   console.warn("⚠️ JWT_SECRET is not set. Authentication tokens are insecure in this environment.");
 }
 
@@ -281,16 +290,16 @@ app.get("/api/health", (req, res) => {
 // API ROUTES
 // ========================
 
-app.use("/api/clients", authenticate, clientRoutes);
+app.use("/api/clients", authenticate, requireCsrf, clientRoutes);
 console.log("Mounting /api/milk routes");
-app.use("/api/milk", authenticate, milkRoutes);
-app.use("/api/settlements", authenticate, settlementRoutes);
-app.use("/api/payments", authenticate, paymentRoutes);
-app.use("/api/advances", authenticate, advanceRoutes);
-app.use("/api/consumers", authenticate, consumerRoutes);
-app.use("/api/consumer-sales", authenticate, consumerSalesRoutes);
-app.use("/api/consumer-payments", authenticate, consumerPaymentRoutes);
-app.use("/api/inventory", authenticate, inventoryRoutes);
+app.use("/api/milk", authenticate, requireCsrf, milkRoutes);
+app.use("/api/settlements", authenticate, requireCsrf, settlementRoutes);
+app.use("/api/payments", authenticate, requireCsrf, paymentRoutes);
+app.use("/api/advances", authenticate, requireCsrf, advanceRoutes);
+app.use("/api/consumers", authenticate, requireCsrf, consumerRoutes);
+app.use("/api/consumer-sales", authenticate, requireCsrf, consumerSalesRoutes);
+app.use("/api/consumer-payments", authenticate, requireCsrf, consumerPaymentRoutes);
+app.use("/api/inventory", authenticate, requireCsrf, inventoryRoutes);
 
 app.get("/ping", (req, res) => {
   res.send("pong");
