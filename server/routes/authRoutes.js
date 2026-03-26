@@ -16,14 +16,10 @@ const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
-const COOKIE_SAMESITE = String(process.env.AUTH_COOKIE_SAMESITE || "lax").toLowerCase();
+const COOKIE_SAMESITE = "lax";
 
 if (!JWT_SECRET && process.env.NODE_ENV === "production") {
   throw new Error("JWT_SECRET is required in production");
-}
-
-if (!["lax", "strict"].includes(COOKIE_SAMESITE)) {
-  throw new Error("AUTH_COOKIE_SAMESITE must be either 'lax' or 'strict'");
 }
 
 const parseJwtExpiryMs = (token) => {

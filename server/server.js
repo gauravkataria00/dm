@@ -27,16 +27,34 @@ app.disable("x-powered-by");
 app.set("trust proxy", 1);
 
 // CORS Configuration - Restrict to frontend domain
-const allowedOrigins = String(
+const explicitOrigins = String(
   process.env.CORS_ALLOWED_ORIGINS || process.env.FRONTEND_URL || "http://localhost:5173"
 )
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "";
+if (vercelUrl) {
+  explicitOrigins.push(vercelUrl);
+}
+
+const allowedOrigins = Array.from(new Set(explicitOrigins));
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+  if (allowedOrigins.includes(origin)) return true;
+
+  if (process.env.ALLOW_VERCEL_PREVIEW_ORIGINS === "true") {
+    return /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin);
+  }
+
+  return false;
+};
+
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (isAllowedOrigin(origin)) {
       return callback(null, true);
     }
     return callback(new Error("CORS blocked for this origin"));
