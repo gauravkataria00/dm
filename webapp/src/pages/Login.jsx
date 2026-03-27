@@ -24,11 +24,28 @@ export default function Login() {
         })
       });
 
-      const data = await res.json();
+      const contentType = res.headers.get("content-type") || "";
+      const isJsonResponse = contentType.includes("application/json");
+      const payload = isJsonResponse ? await res.json() : await res.text();
 
-      if (data.success) {
-        localStorage.setItem("adminToken", data.token);
+      if (res.ok && payload?.success) {
+        localStorage.setItem("adminToken", payload.token);
         window.location.href = "/";
+        return;
+      }
+
+      if (!res.ok) {
+        if (isJsonResponse && payload?.message) {
+          setError(payload.message);
+          return;
+        }
+
+        if (isJsonResponse && payload?.error) {
+          setError(payload.error);
+          return;
+        }
+
+        setError(`Server error (${res.status})`);
         return;
       }
 
@@ -58,6 +75,7 @@ export default function Login() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              autoComplete="username"
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-black dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300"
               placeholder="Himanshu@admin.com"
               required
@@ -73,6 +91,7 @@ export default function Login() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-black dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300"
               placeholder="Enter password"
               required
