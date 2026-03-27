@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { API_BASE_URL } from "../services/config";
+import { API_BASE_URL, API_FALLBACK_BASE_URL } from "../services/config";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -13,16 +13,24 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      const loginBody = JSON.stringify({
+        email,
+        password
+      });
+
+      const requestOptions = {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({
-          email,
-          password
-        })
-      });
+        body: loginBody
+      };
+
+      let res = await fetch(`${API_BASE_URL}/api/auth/login`, requestOptions);
+
+      if (!res.ok && res.status >= 500 && API_FALLBACK_BASE_URL && API_FALLBACK_BASE_URL !== API_BASE_URL) {
+        res = await fetch(`${API_FALLBACK_BASE_URL}/api/auth/login`, requestOptions);
+      }
 
       const contentType = res.headers.get("content-type") || "";
       const isJsonResponse = contentType.includes("application/json");

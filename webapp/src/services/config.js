@@ -30,3 +30,8 @@ const normalizeApiBaseUrl = (value) => {
 };
 
 export const API_BASE_URL = normalizeApiBaseUrl(rawApiBaseUrl);
+
+const fallbackRawBaseUrl =
+  import.meta.env.VITE_API_FALLBACK_URL || "https://dairy-backend-pw3n.onrender.com";
+
+export const API_FALLBACK_BASE_URL = normalizeApiBaseUrl(fallbackRawBaseUrl);
