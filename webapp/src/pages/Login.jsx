@@ -26,10 +26,22 @@ export default function Login() {
         body: loginBody
       };
 
-      let res = await fetch(`${API_BASE_URL}/api/auth/login`, requestOptions);
+      const primaryLoginUrl = `${API_BASE_URL}/api/auth/login`;
+      const fallbackLoginUrl = `${API_FALLBACK_BASE_URL}/api/auth/login`;
+
+      let res;
+      try {
+        res = await fetch(primaryLoginUrl, requestOptions);
+      } catch (primaryError) {
+        if (API_FALLBACK_BASE_URL && API_FALLBACK_BASE_URL !== API_BASE_URL) {
+          res = await fetch(fallbackLoginUrl, requestOptions);
+        } else {
+          throw primaryError;
+        }
+      }
 
       if (!res.ok && res.status >= 500 && API_FALLBACK_BASE_URL && API_FALLBACK_BASE_URL !== API_BASE_URL) {
-        res = await fetch(`${API_FALLBACK_BASE_URL}/api/auth/login`, requestOptions);
+        res = await fetch(fallbackLoginUrl, requestOptions);
       }
 
       const contentType = res.headers.get("content-type") || "";
