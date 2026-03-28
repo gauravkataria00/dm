@@ -17,6 +17,7 @@ export default function AddMilk() {
   const [shift, setShift] = useState("morning");
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSendingWhatsApp, setIsSendingWhatsApp] = useState(false);
   const [isRateManuallyEdited, setIsRateManuallyEdited] = useState(false);
   const [todaySummary, setTodaySummary] = useState({
     totalEntries: 0,
@@ -131,6 +132,45 @@ export default function AddMilk() {
     }
   }, [defaultRateForType, isRateManuallyEdited]);
 
+  const openWhatsAppWithEntry = (savedEntry) => {
+    const selectedClient = clients.find(
+      (client) => String(client?.id) === String(selectedClientId)
+    );
+    const phone = String(selectedClient?.phone || "").replace(/[^0-9]/g, "");
+
+    if (!phone) {
+      push("Entry saved. Client phone not found for WhatsApp.", "success");
+      return;
+    }
+
+    const entryDate = savedEntry?.createdAt ? new Date(savedEntry.createdAt) : new Date();
+    const formattedDate = entryDate.toLocaleDateString("en-IN");
+    const formattedTime = entryDate.toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const finalLitres = Number(savedEntry?.litres ?? litres ?? 0);
+    const finalFat = Number(savedEntry?.fat ?? fat ?? 0);
+    const finalSnf = Number(savedEntry?.snf ?? snf ?? 0);
+    const finalRate = Number(savedEntry?.rate ?? rate ?? 0);
+    const finalTotal = Number(savedEntry?.total ?? total ?? 0);
+    const finalType = savedEntry?.type || type;
+    const finalShift = savedEntry?.shift || shift;
+
+    const message = `🥛 Milk Entry Update\n\nClient: ${selectedClient?.name || "Customer"}\nDate: ${formattedDate}\nTime: ${formattedTime}\nType: ${String(finalType).toUpperCase()}\nShift: ${finalShift === "evening" ? "Evening 🌙" : "Morning 🌅"}\nLitres: ${finalLitres.toFixed(2)} L\nFAT: ${finalFat.toFixed(2)}%\nSNF: ${finalSnf.toFixed(2)}%\nRate: ₹${finalRate.toFixed(2)}/L\nTotal: ₹${finalTotal.toFixed(2)}\n\nThank you 🙏\nDairy Manager Pro`;
+
+    const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    const popup = window.open(whatsappUrl, "_blank");
+
+    if (!popup) {
+      push("Entry saved, but WhatsApp popup was blocked by browser.", "error");
+      return;
+    }
+
+    push("WhatsApp opened with entry details", "success");
+  };
+
   const handleSave = async () => {
     if (!selectedClientId) {
       push("Please select a customer", "error");
@@ -149,7 +189,7 @@ export default function AddMilk() {
 
     setIsSubmitting(true);
     try {
-      await createMilkEntry({
+      const savedEntry = await createMilkEntry({
         clientId: selectedClientId,
         type,
         litres: Number(litres),
@@ -166,10 +206,15 @@ export default function AddMilk() {
       setRate(String(defaultRateForType));
       setIsRateManuallyEdited(false);
       await loadTodaySummary();
+
+      setIsSendingWhatsApp(true);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      openWhatsAppWithEntry(savedEntry);
     } catch {
       push("Failed to save milk entry", "error");
     } finally {
       setIsSubmitting(false);
+      setIsSendingWhatsApp(false);
     }
   };
 
@@ -384,10 +429,25 @@ export default function AddMilk() {
             <button
               type="button"
               onClick={handleSave}
-              disabled={isSubmitting}
-              className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition disabled:opacity-50"
+              disabled={isSubmitting || isSendingWhatsApp}
+              className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {isSubmitting ? "Saving..." : "Save Entry"}
+              {isSubmitting ? (
+                <>
+                  <span className="inline-block w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+                  Saving Entry...
+                </>
+              ) : isSendingWhatsApp ? (
+                <>
+                  <span className="animate-bounce">📲</span>
+                  Opening WhatsApp...
+                </>
+              ) : (
+                <>
+                  <span>💾</span>
+                  <span>Save Entry + WhatsApp</span>
+                </>
+              )}
             </button>
           </>
         )}
