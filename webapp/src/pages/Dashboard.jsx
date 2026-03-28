@@ -587,17 +587,17 @@ export default function Dashboard() {
           </h3>
           <div className="space-y-4">
             {topClients.length > 0 ? topClients.map((client, index) => (
-              <div key={index} className="flex items-center justify-between gap-3 p-4 bg-gray-50 rounded-lg overflow-hidden">
+              <div key={index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-gray-50 rounded-lg overflow-hidden">
                 <div className="flex items-center space-x-4 min-w-0 flex-1">
                   <div className="w-10 h-10 shrink-0 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
                     {index + 1}
                   </div>
                   <div className="min-w-0">
-                    <div className="font-medium text-gray-900 truncate">{client.name}</div>
+                    <div className="font-medium text-gray-900 break-words">{client.name}</div>
                     <div className="text-sm text-gray-500">₹{client.revenue.toFixed(0)} revenue</div>
                   </div>
                 </div>
-                <div className="text-right shrink-0 w-24">
+                <div className="text-right sm:text-right self-end sm:self-auto shrink-0 w-24">
                   <div className="w-full bg-gray-200 rounded-full h-2 mb-1 overflow-hidden">
                     <div
                       className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-500"
