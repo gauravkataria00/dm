@@ -587,21 +587,21 @@ export default function Dashboard() {
           </h3>
           <div className="space-y-4">
             {topClients.length > 0 ? topClients.map((client, index) => (
-              <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+              <div key={index} className="flex items-center justify-between gap-3 p-4 bg-gray-50 rounded-lg overflow-hidden">
+                <div className="flex items-center space-x-4 min-w-0 flex-1">
+                  <div className="w-10 h-10 shrink-0 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
                     {index + 1}
                   </div>
-                  <div>
-                    <div className="font-medium text-gray-900">{client.name}</div>
+                  <div className="min-w-0">
+                    <div className="font-medium text-gray-900 truncate">{client.name}</div>
                     <div className="text-sm text-gray-500">₹{client.revenue.toFixed(0)} revenue</div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="w-20 bg-gray-200 rounded-full h-2 mb-1 overflow-hidden">
+                <div className="text-right shrink-0 w-24">
+                  <div className="w-full bg-gray-200 rounded-full h-2 mb-1 overflow-hidden">
                     <div
                       className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min(client.percentage, 100)}%` }}
+                      style={{ width: `${Math.max(0, Math.min(Number(client.percentage) || 0, 100))}%` }}
                     ></div>
                   </div>
                   <div className="text-xs text-gray-500">{client.percentage.toFixed(0)}%</div>
