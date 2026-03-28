@@ -31,6 +31,7 @@ export default function AddMilk() {
 
   const cowRate = parseFloat(localStorage.getItem("cowRate")) || 45;
   const buffaloRate = parseFloat(localStorage.getItem("buffaloRate")) || 55;
+  const autoOpenWhatsAppAfterSave = localStorage.getItem("autoOpenWhatsAppAfterSave") !== "false";
   const defaultRateForType = type === "cow" ? cowRate : buffaloRate;
   const total = Number(litres || 0) * Number(rate || 0);
 
@@ -207,9 +208,11 @@ export default function AddMilk() {
       setIsRateManuallyEdited(false);
       await loadTodaySummary();
 
-      setIsSendingWhatsApp(true);
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      openWhatsAppWithEntry(savedEntry);
+      if (autoOpenWhatsAppAfterSave) {
+        setIsSendingWhatsApp(true);
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        openWhatsAppWithEntry(savedEntry);
+      }
     } catch {
       push("Failed to save milk entry", "error");
     } finally {
@@ -445,7 +448,7 @@ export default function AddMilk() {
               ) : (
                 <>
                   <span>💾</span>
-                  <span>Save Entry + WhatsApp</span>
+                  <span>{autoOpenWhatsAppAfterSave ? "Save Entry + WhatsApp" : "Save Entry"}</span>
                 </>
               )}
             </button>

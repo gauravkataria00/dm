@@ -8,13 +8,23 @@ export default function Settings() {
     return Number.isNaN(value) ? fallback : value;
   };
 
+  const getStoredBoolean = (key, fallback) => {
+    const value = localStorage.getItem(key);
+    if (value === null) return fallback;
+    return value === "true";
+  };
+
   const [cowRate, setCowRate] = useState(() => getStoredRate("cowRate", 45));
   const [buffaloRate, setBuffaloRate] = useState(() => getStoredRate("buffaloRate", 55));
+  const [autoOpenWhatsAppAfterSave, setAutoOpenWhatsAppAfterSave] = useState(() =>
+    getStoredBoolean("autoOpenWhatsAppAfterSave", true)
+  );
   const { push } = useToast();
 
   const saveSettings = () => {
     localStorage.setItem("cowRate", cowRate);
     localStorage.setItem("buffaloRate", buffaloRate);
+    localStorage.setItem("autoOpenWhatsAppAfterSave", String(autoOpenWhatsAppAfterSave));
     push("Settings saved", "success");
   };
 
@@ -36,6 +46,15 @@ export default function Settings() {
             <div className="flex items-center justify-between">
               <span className="text-gray-800 dark:text-gray-200 font-medium">Daily summary reports</span>
               <input type="checkbox" className="rounded" defaultChecked />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-800 dark:text-gray-200 font-medium">Auto-open WhatsApp after save</span>
+              <input
+                type="checkbox"
+                className="rounded"
+                checked={autoOpenWhatsAppAfterSave}
+                onChange={(e) => setAutoOpenWhatsAppAfterSave(e.target.checked)}
+              />
             </div>
           </div>
         </div>
