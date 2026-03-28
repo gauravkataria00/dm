@@ -38,7 +38,12 @@ export default function MainLayout({ children }) {
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         } md:translate-x-0 md:static md:shadow-none`}
       >
-        <nav className="p-6 space-y-2">
+        <div className="px-6 pt-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+          <p className="text-lg font-bold text-gray-900 dark:text-white">🐄 Dairy Manager</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Daily collection & payments</p>
+        </div>
+
+        <nav className="p-4 space-y-1.5">
           {navItems.map((item) => (
             <Link
               key={item.path}

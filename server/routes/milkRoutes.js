@@ -51,7 +51,7 @@ router.get("/", async (req, res) => {
 
 router.post("/", async (req, res) => {
   try {
-    const { clientId, type, litres, fat, snf, rate, total } = req.body;
+    const { clientId, type, litres, fat, snf, rate, total, shift } = req.body;
     if (!clientId) return res.status(400).json({ error: "clientId is required" });
 
     // Validate that client exists before saving
@@ -61,7 +61,7 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "Invalid client" });
     }
 
-    const milkEntry = new MilkEntry({ clientId, type, litres, fat, snf, rate, total });
+    const milkEntry = new MilkEntry({ clientId, type, litres, fat, snf, rate, total, shift });
     await milkEntry.save();
 
     await milkEntry.populate('clientId', 'name phone');
@@ -75,6 +75,7 @@ router.post("/", async (req, res) => {
       rate: milkEntry.rate,
       total: milkEntry.total,
       type: milkEntry.type,
+      shift: milkEntry.shift,
       createdAt: milkEntry.createdAt,
       client: {
         name: milkEntry.clientId?.name || "Unknown",

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import MainLayout from "../components/layout/MainLayout";
-import { getClients, createMilkEntry } from "../services/api";
+import { getClients, createMilkEntry, getMilkEntries } from "../services/api";
 import { useToast } from "../context/ToastContext";
 
 export default function AddMilk() {
@@ -17,8 +17,68 @@ export default function AddMilk() {
   const [shift, setShift] = useState("morning");
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRateManuallyEdited, setIsRateManuallyEdited] = useState(false);
+  const [todaySummary, setTodaySummary] = useState({
+    totalEntries: 0,
+    totalLitres: 0,
+    totalAmount: 0,
+    morningLitres: 0,
+    eveningLitres: 0,
+  });
 
   const { push } = useToast();
+
+  const cowRate = parseFloat(localStorage.getItem("cowRate")) || 45;
+  const buffaloRate = parseFloat(localStorage.getItem("buffaloRate")) || 55;
+  const defaultRateForType = type === "cow" ? cowRate : buffaloRate;
+  const total = Number(litres || 0) * Number(rate || 0);
+
+  const loadTodaySummary = async () => {
+    try {
+      const entries = await getMilkEntries();
+      const today = new Date().toISOString().split("T")[0];
+      const todaysEntries = (entries || []).filter((entry) =>
+        String(entry?.createdAt || "").startsWith(today)
+      );
+
+      const summary = todaysEntries.reduce(
+        (acc, entry) => {
+          const litresValue = Number(entry?.litres || 0);
+          const rateValue = Number(entry?.rate || 0);
+          const entryTotal = Number(entry?.total || litresValue * rateValue);
+
+          acc.totalEntries += 1;
+          acc.totalLitres += litresValue;
+          acc.totalAmount += entryTotal;
+
+          if (entry?.shift === "evening") {
+            acc.eveningLitres += litresValue;
+          } else {
+            acc.morningLitres += litresValue;
+          }
+
+          return acc;
+        },
+        {
+          totalEntries: 0,
+          totalLitres: 0,
+          totalAmount: 0,
+          morningLitres: 0,
+          eveningLitres: 0,
+        }
+      );
+
+      setTodaySummary(summary);
+    } catch {
+      setTodaySummary({
+        totalEntries: 0,
+        totalLitres: 0,
+        totalAmount: 0,
+        morningLitres: 0,
+        eveningLitres: 0,
+      });
+    }
+  };
 
   useEffect(() => {
     const loadClients = async () => {
@@ -26,6 +86,8 @@ export default function AddMilk() {
         const data = await getClients();
         setClients(data || []);
         setFilteredClients(data || []);
+        setRate(String(defaultRateForType));
+        await loadTodaySummary();
       } catch {
         push("Failed to load clients", "error");
       } finally {
@@ -63,9 +125,11 @@ export default function AddMilk() {
     );
   }, [clients, search]);
 
-  const cowRate = parseFloat(localStorage.getItem("cowRate")) || 45;
-  const buffaloRate = parseFloat(localStorage.getItem("buffaloRate")) || 55;
-  const total = Number(litres) * Number(rate || 0);
+  useEffect(() => {
+    if (!isRateManuallyEdited) {
+      setRate(String(defaultRateForType));
+    }
+  }, [defaultRateForType, isRateManuallyEdited]);
 
   const handleSave = async () => {
     if (!selectedClientId) {
@@ -75,6 +139,11 @@ export default function AddMilk() {
 
     if (!litres || Number(litres) <= 0) {
       push("Enter a valid litres value", "error");
+      return;
+    }
+
+    if (!rate || Number(rate) <= 0) {
+      push("Enter a valid rate", "error");
       return;
     }
 
@@ -94,7 +163,9 @@ export default function AddMilk() {
       setLitres("");
       setFat("");
       setSnf("");
-      setRate("");
+      setRate(String(defaultRateForType));
+      setIsRateManuallyEdited(false);
+      await loadTodaySummary();
     } catch {
       push("Failed to save milk entry", "error");
     } finally {
@@ -105,6 +176,27 @@ export default function AddMilk() {
   return (
     <MainLayout>
       <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Add Milk Entry</h1>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+        <div className="rounded-xl bg-white dark:bg-gray-900 shadow-md p-4 border border-gray-100 dark:border-gray-800">
+          <p className="text-xs text-gray-500 dark:text-gray-400">Today Entries</p>
+          <p className="text-xl font-bold text-gray-900 dark:text-white">{todaySummary.totalEntries}</p>
+        </div>
+        <div className="rounded-xl bg-white dark:bg-gray-900 shadow-md p-4 border border-gray-100 dark:border-gray-800">
+          <p className="text-xs text-gray-500 dark:text-gray-400">Today Litres</p>
+          <p className="text-xl font-bold text-gray-900 dark:text-white">{todaySummary.totalLitres.toFixed(1)} L</p>
+        </div>
+        <div className="rounded-xl bg-white dark:bg-gray-900 shadow-md p-4 border border-gray-100 dark:border-gray-800">
+          <p className="text-xs text-gray-500 dark:text-gray-400">Morning / Evening</p>
+          <p className="text-lg font-semibold text-gray-900 dark:text-white">
+            {todaySummary.morningLitres.toFixed(1)} / {todaySummary.eveningLitres.toFixed(1)} L
+          </p>
+        </div>
+        <div className="rounded-xl bg-white dark:bg-gray-900 shadow-md p-4 border border-gray-100 dark:border-gray-800">
+          <p className="text-xs text-gray-500 dark:text-gray-400">Today Amount</p>
+          <p className="text-xl font-bold text-green-600">₹ {todaySummary.totalAmount.toFixed(0)}</p>
+        </div>
+      </div>
 
       <div className="bg-white dark:bg-gray-900 text-black dark:text-white rounded-xl shadow-md p-6 space-y-5">
         {loading ? (
@@ -166,7 +258,10 @@ export default function AddMilk() {
             <div className="flex gap-3">
               <button
                 type="button"
-                onClick={() => setType("cow")}
+                onClick={() => {
+                  setType("cow");
+                  if (!isRateManuallyEdited) setRate(String(cowRate));
+                }}
                 className={`flex-1 text-center px-4 py-2 rounded-xl font-semibold transition ${
                   type === "cow"
                     ? "bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md"
@@ -178,7 +273,10 @@ export default function AddMilk() {
 
               <button
                 type="button"
-                onClick={() => setType("buffalo")}
+                onClick={() => {
+                  setType("buffalo");
+                  if (!isRateManuallyEdited) setRate(String(buffaloRate));
+                }}
                 className={`flex-1 text-center px-4 py-2 rounded-xl font-semibold transition ${
                   type === "buffalo"
                     ? "bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md"
@@ -244,13 +342,42 @@ export default function AddMilk() {
               type="number"
               placeholder="Enter Rate (₹/L)"
               value={rate}
-              onChange={(e) => setRate(e.target.value)}
+              onChange={(e) => {
+                setRate(e.target.value);
+                setIsRateManuallyEdited(true);
+              }}
               className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
             />
 
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setRate(String(defaultRateForType));
+                  setIsRateManuallyEdited(false);
+                }}
+                className="px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600"
+              >
+                Use Default Rate (₹ {defaultRateForType})
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setLitres("");
+                  setFat("");
+                  setSnf("");
+                  setRate(String(defaultRateForType));
+                  setIsRateManuallyEdited(false);
+                }}
+                className="px-3 py-2 rounded-lg text-sm font-medium bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50"
+              >
+                Reset Form
+              </button>
+            </div>
+
             {/* Calculation */}
             <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg">
-              <p className="text-gray-800 dark:text-gray-200">Rate: ₹ {Number(rate || 0).toFixed(2)}</p>
+              <p className="text-gray-800 dark:text-gray-200">Rate: ₹ {Number(rate || 0).toFixed(2)} / L</p>
               <p className="font-bold text-lg text-gray-900 dark:text-white">Total: ₹ {total.toFixed(2)}</p>
             </div>
 
