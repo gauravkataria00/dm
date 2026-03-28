@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import MainLayout from "../components/layout/MainLayout";
-import { getMilkEntries, getClients } from "../services/api";
+import { getMilkEntries, getClients, deleteMilkEntry } from "../services/api";
 import { useToast } from "../context/ToastContext";
 import { FaWhatsapp } from "react-icons/fa";
 import { jsPDF } from "jspdf";
@@ -215,6 +215,7 @@ Dairy Manager Pro`;
   const handleDelete = async (entryId) => {
     if (!entryId) {
       console.warn("No entry ID");
+      push("Invalid entry ID", "error");
       return;
     }
 
@@ -222,40 +223,20 @@ Dairy Manager Pro`;
     if (!confirmDelete) return;
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL;
-
-      console.log("Deleting ID:", entryId);
-      console.log("API URL:", API_URL);
-
-      const res = await fetch(`${API_URL}/api/milk/${entryId}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json"
-        }
-      });
-
-      console.log("Response status:", res.status);
-
-      const data = await res.json().catch(() => null);
-      console.log("Response data:", data);
-
-      if (!res.ok) {
-        alert("Delete failed. Check console.");
-        return;
-      }
+      await deleteMilkEntry(entryId);
 
       // Update UI
       setEntries(prev =>
         Array.isArray(prev)
-          ? prev.filter(item => item?._id !== entryId)
+          ? prev.filter(item => String(item?._id || item?.id) !== String(entryId))
           : []
       );
 
-      alert("Entry deleted successfully");
+      push("Entry deleted successfully", "success");
 
     } catch (error) {
       console.error("Delete error:", error);
-      alert("Server error while deleting");
+      push(error?.message || "Server error while deleting", "error");
     }
   };
 

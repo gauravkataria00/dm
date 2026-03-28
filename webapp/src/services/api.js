@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "./config";
+import { API_BASE_URL, API_FALLBACK_BASE_URL } from "./config";
 
 const API_BASE_URL_WITH_API = `${API_BASE_URL}/api`;
 
@@ -133,6 +133,46 @@ export const createMilkEntry = async (entryData) => {
     console.error("Error creating milk entry:", error);
     throw error;
   }
+};
+
+export const deleteMilkEntry = async (entryId) => {
+  const primaryUrl = `${API_BASE_URL_WITH_API}/milk/${entryId}`;
+  const fallbackBase = `${API_FALLBACK_BASE_URL}/api`;
+  const fallbackUrl = `${fallbackBase}/milk/${entryId}`;
+
+  const requestOptions = {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+  };
+
+  let response;
+
+  try {
+    response = await fetch(primaryUrl, requestOptions);
+  } catch (error) {
+    if (API_FALLBACK_BASE_URL && API_FALLBACK_BASE_URL !== API_BASE_URL) {
+      response = await fetch(fallbackUrl, requestOptions);
+    } else {
+      throw error;
+    }
+  }
+
+  if (!response.ok && response.status >= 500 && API_FALLBACK_BASE_URL && API_FALLBACK_BASE_URL !== API_BASE_URL) {
+    response = await fetch(fallbackUrl, requestOptions);
+  }
+
+  const contentType = response.headers.get("content-type") || "";
+  const isJson = contentType.includes("application/json");
+  const payload = isJson ? await response.json() : await response.text();
+
+  if (!response.ok) {
+    const message = isJson
+      ? payload?.error || payload?.message || `Delete failed (${response.status})`
+      : `Delete failed (${response.status})`;
+    throw new Error(message);
+  }
+
+  return payload;
 };
 
 // Settlements
