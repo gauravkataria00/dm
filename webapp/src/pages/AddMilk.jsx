@@ -32,6 +32,7 @@ export default function AddMilk() {
 
   const cowRate = parseFloat(localStorage.getItem("cowRate")) || 45;
   const buffaloRate = parseFloat(localStorage.getItem("buffaloRate")) || 55;
+  const dairyName = String(localStorage.getItem("dairyName") || "Dairy Manager Pro").trim() || "Dairy Manager Pro";
   const autoOpenWhatsAppAfterSave = localStorage.getItem("autoOpenWhatsAppAfterSave") !== "false";
   const defaultRateForType = type === "cow" ? cowRate : buffaloRate;
   const total = Number(litres || 0) * Number(rate || 0);
@@ -168,7 +169,7 @@ export default function AddMilk() {
     const finalType = savedEntry?.type || type;
     const finalShift = savedEntry?.shift || shift;
 
-    const message = `🥛 Milk Entry Update\n\nClient: ${selectedClient?.name || "Customer"}\nDate: ${formattedDate}\nTime: ${formattedTime}\nType: ${String(finalType).toUpperCase()}\nShift: ${finalShift === "evening" ? "Evening 🌙" : "Morning 🌅"}\nLitres: ${finalLitres.toFixed(2)} L\nFAT: ${finalFat.toFixed(2)}%\nSNF: ${finalSnf.toFixed(2)}%\nRate: ₹${finalRate.toFixed(2)}/L\nTotal: ₹${finalTotal.toFixed(2)}\n\nThank you 🙏\nDairy Manager Pro`;
+    const message = `🥛 Milk Entry Update\n\nClient: ${selectedClient?.name || "Customer"}\nDate: ${formattedDate}\nTime: ${formattedTime}\nType: ${String(finalType).toUpperCase()}\nShift: ${finalShift === "evening" ? "Evening 🌙" : "Morning 🌅"}\nLitres: ${finalLitres.toFixed(2)} L\nFAT: ${finalFat.toFixed(2)}%\nSNF: ${finalSnf.toFixed(2)}%\nRate: ₹${finalRate.toFixed(2)}/L\nTotal: ₹${finalTotal.toFixed(2)}\n\nThank you 🙏\n${dairyName}`;
 
     const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
     const popup = window.open(whatsappUrl, "_blank");

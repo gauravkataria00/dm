@@ -14,17 +14,26 @@ export default function Settings() {
     return value === "true";
   };
 
+  const getStoredText = (key, fallback = "") => {
+    const value = localStorage.getItem(key);
+    return value === null ? fallback : value;
+  };
+
   const [cowRate, setCowRate] = useState(() => getStoredRate("cowRate", 45));
   const [buffaloRate, setBuffaloRate] = useState(() => getStoredRate("buffaloRate", 55));
   const [autoOpenWhatsAppAfterSave, setAutoOpenWhatsAppAfterSave] = useState(() =>
     getStoredBoolean("autoOpenWhatsAppAfterSave", true)
   );
+  const [dairyName, setDairyName] = useState(() => getStoredText("dairyName", "Dairy Manager Pro"));
+  const [ownerName, setOwnerName] = useState(() => getStoredText("ownerName", ""));
   const { push } = useToast();
 
   const saveSettings = () => {
     localStorage.setItem("cowRate", cowRate);
     localStorage.setItem("buffaloRate", buffaloRate);
     localStorage.setItem("autoOpenWhatsAppAfterSave", String(autoOpenWhatsAppAfterSave));
+    localStorage.setItem("dairyName", String(dairyName || "").trim() || "Dairy Manager Pro");
+    localStorage.setItem("ownerName", String(ownerName || "").trim());
     push("Settings saved", "success");
   };
 
@@ -94,12 +103,14 @@ export default function Settings() {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">
-                Farm Name
+                Dairy Name
               </label>
               <input
                 type="text"
                 className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
-                placeholder="Enter farm name"
+                placeholder="Enter dairy name"
+                value={dairyName}
+                onChange={(e) => setDairyName(e.target.value)}
               />
             </div>
             <div>
@@ -110,6 +121,8 @@ export default function Settings() {
                 type="text"
                 className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
                 placeholder="Enter owner name"
+                value={ownerName}
+                onChange={(e) => setOwnerName(e.target.value)}
               />
             </div>
           </div>

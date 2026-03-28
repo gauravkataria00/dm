@@ -83,6 +83,7 @@ export default function Ledger() {
   };
 
   const { push } = useToast();
+  const dairyName = String(localStorage.getItem("dairyName") || "Dairy Manager Pro").trim() || "Dairy Manager Pro";
 
   useEffect(() => {
     const loadData = async () => {
@@ -168,7 +169,7 @@ Rate: ₹${formatNumber(entry?.rate)}
 Total: ₹${formatNumber(entry?.total)}
 
 Thank you!
-Dairy Manager Pro`;
+${dairyName}`;
 
     const encodedMessage = encodeURIComponent(message);
     const url = `https://wa.me/${phone}?text=${encodedMessage}`;
@@ -205,7 +206,7 @@ Total litres: ${totalLitres.toFixed(2)} L
 Total amount: ₹${totalAmount.toFixed(2)}
 
 Thank you!
-Dairy Manager Pro`;
+${dairyName}`;
 
     const encodedMessage = encodeURIComponent(message);
     const url = `https://wa.me/${phone}?text=${encodedMessage}`;
