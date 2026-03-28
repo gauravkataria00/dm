@@ -8,7 +8,8 @@ router.get("/", async (req, res) => {
   try {
     let settlements = await Settlement.find()
       .populate('clientId', 'name phone')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
     
     // Remove broken references
     settlements = settlements.filter(settlement => settlement.clientId !== null);
@@ -42,7 +43,8 @@ router.get("/client/:clientId", async (req, res) => {
   try {
     let settlements = await Settlement.find({ clientId: req.params.clientId })
       .populate('clientId', 'name phone')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
     
     // Remove broken references
     settlements = settlements.filter(settlement => settlement.clientId !== null);

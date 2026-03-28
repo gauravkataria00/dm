@@ -7,7 +7,8 @@ router.get("/", async (req, res) => {
   try {
     let advances = await Advance.find()
       .populate('clientId', 'name phone')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
     
     // Remove broken references
     advances = advances.filter(advance => advance.clientId !== null);
@@ -40,7 +41,8 @@ router.get("/client/:clientId", async (req, res) => {
   try {
     let advances = await Advance.find({ clientId: req.params.clientId })
       .populate('clientId', 'name phone')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
     
     // Remove broken references
     advances = advances.filter(advance => advance.clientId !== null);

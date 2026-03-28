@@ -31,4 +31,7 @@ const inventorySchema = new mongoose.Schema({
   },
 });
 
+inventorySchema.index({ date: -1, createdAt: -1 });
+inventorySchema.index({ type: 1, date: -1 });
+
 module.exports = mongoose.model("Inventory", inventorySchema);

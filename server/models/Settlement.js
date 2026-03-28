@@ -32,4 +32,8 @@ const settlementSchema = new mongoose.Schema({
   },
 });
 
+settlementSchema.index({ createdAt: -1 });
+settlementSchema.index({ clientId: 1, status: 1, createdAt: -1 });
+settlementSchema.index({ clientId: 1, startDate: -1, endDate: -1 });
+
 module.exports = mongoose.model("Settlement", settlementSchema);

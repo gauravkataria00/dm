@@ -13,6 +13,7 @@ import {
 export default function Dashboard() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState("today");
   const [dashboardData, setDashboardData] = useState({
     stats: {
@@ -70,65 +71,50 @@ export default function Dashboard() {
 
   const loadDashboardData = async () => {
     try {
-      setLoading(true);
+      if (loading) {
+        setLoading(true);
+      } else {
+        setIsRefreshing(true);
+      }
 
       console.log("Starting dashboard data load...");
 
-      // Load all required data in parallel with better error handling
-      let clients = [];
-      let milkEntries = [];
-      let settlements = [];
-      let payments = [];
-      let advances = [];
-      let todayInventory = {};
+      const [
+        clientsResult,
+        milkEntriesResult,
+        settlementsResult,
+        paymentsResult,
+        advancesResult,
+        todayInventoryResult,
+      ] = await Promise.allSettled([
+        getClients(),
+        getMilkEntries(),
+        getSettlements(),
+        getPayments(),
+        getAdvances(),
+        getTodayInventory(),
+      ]);
 
-      try {
-        clients = await getClients();
-        console.log("Clients loaded:", clients.length);
-      } catch (err) {
-        console.warn("Failed to load clients:", err);
-        clients = [];
-      }
+      const clients = clientsResult.status === "fulfilled" ? clientsResult.value : [];
+      const milkEntries = milkEntriesResult.status === "fulfilled" ? milkEntriesResult.value : [];
+      const settlements = settlementsResult.status === "fulfilled" ? settlementsResult.value : [];
+      const payments = paymentsResult.status === "fulfilled" ? paymentsResult.value : [];
+      const advances = advancesResult.status === "fulfilled" ? advancesResult.value : [];
+      const todayInventory = todayInventoryResult.status === "fulfilled" ? todayInventoryResult.value : {};
 
-      try {
-        milkEntries = await getMilkEntries();
-        console.log("Milk entries loaded:", milkEntries.length);
-      } catch (err) {
-        console.warn("Failed to load milk entries:", err);
-        milkEntries = [];
-      }
+      if (clientsResult.status !== "fulfilled") console.warn("Failed to load clients:", clientsResult.reason);
+      if (milkEntriesResult.status !== "fulfilled") console.warn("Failed to load milk entries:", milkEntriesResult.reason);
+      if (settlementsResult.status !== "fulfilled") console.warn("Failed to load settlements:", settlementsResult.reason);
+      if (paymentsResult.status !== "fulfilled") console.warn("Failed to load payments:", paymentsResult.reason);
+      if (advancesResult.status !== "fulfilled") console.warn("Failed to load advances:", advancesResult.reason);
+      if (todayInventoryResult.status !== "fulfilled") console.warn("Failed to load today inventory:", todayInventoryResult.reason);
 
-      try {
-        settlements = await getSettlements();
-        console.log("Settlements loaded:", settlements.length);
-      } catch (err) {
-        console.warn("Failed to load settlements:", err);
-        settlements = [];
-      }
-
-      try {
-        payments = await getPayments();
-        console.log("Payments loaded:", payments.length);
-      } catch (err) {
-        console.warn("Failed to load payments:", err);
-        payments = [];
-      }
-
-      try {
-        advances = await getAdvances();
-        console.log("Advances loaded:", advances.length);
-      } catch (err) {
-        console.warn("Failed to load advances:", err);
-        advances = [];
-      }
-
-      try {
-        todayInventory = await getTodayInventory();
-        console.log("Today inventory loaded:", todayInventory);
-      } catch (err) {
-        console.warn("Failed to load today inventory:", err);
-        todayInventory = {};
-      }
+      console.log("Clients loaded:", clients.length);
+      console.log("Milk entries loaded:", milkEntries.length);
+      console.log("Settlements loaded:", settlements.length);
+      console.log("Payments loaded:", payments.length);
+      console.log("Advances loaded:", advances.length);
+      console.log("Today inventory loaded:", todayInventory);
 
       console.log("All data loaded successfully");
 
@@ -237,6 +223,7 @@ export default function Dashboard() {
       });
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -446,7 +433,7 @@ export default function Dashboard() {
                 className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center space-x-2"
               >
                 <span>🔄</span>
-                <span>Refresh</span>
+                <span>{isRefreshing ? "Refreshing..." : "Refresh"}</span>
               </button>
             </div>
           </div>

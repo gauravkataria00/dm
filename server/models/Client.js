@@ -9,4 +9,7 @@ const clientSchema = new mongoose.Schema({
   },
 });
 
+clientSchema.index({ createdAt: -1 });
+clientSchema.index({ phone: 1 });
+
 module.exports = mongoose.model("Client", clientSchema);

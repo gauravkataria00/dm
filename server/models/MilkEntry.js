@@ -41,4 +41,8 @@ const milkEntrySchema = new mongoose.Schema({
   },
 });
 
+milkEntrySchema.index({ createdAt: -1 });
+milkEntrySchema.index({ clientId: 1, createdAt: -1 });
+milkEntrySchema.index({ type: 1, createdAt: -1 });
+
 module.exports = mongoose.model("MilkEntry", milkEntrySchema);

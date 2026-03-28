@@ -5,7 +5,7 @@ const Client = require("../models/Client");
 
 router.get("/", async (req, res) => {
   try {
-    const milkEntries = await MilkEntry.find().sort({ createdAt: -1 });
+    const milkEntries = await MilkEntry.find().sort({ createdAt: -1 }).lean();
 
     // Gather client IDs (even if some are invalid/missing)
     const mongoose = require('mongoose');
@@ -14,7 +14,7 @@ router.get("/", async (req, res) => {
       .filter(id => id && mongoose.Types.ObjectId.isValid(id))
       .map(id => id.toString()))];
 
-    const clients = await Client.find({ _id: { $in: clientIds } }).select('name phone');
+    const clients = await Client.find({ _id: { $in: clientIds } }).select('name phone').lean();
     const clientMap = clients.reduce((acc, client) => {
       acc[client._id.toString()] = client;
       return acc;

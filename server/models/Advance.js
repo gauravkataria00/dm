@@ -25,4 +25,7 @@ const advanceSchema = new mongoose.Schema({
   },
 });
 
+advanceSchema.index({ createdAt: -1 });
+advanceSchema.index({ clientId: 1, status: 1, createdAt: -1 });
+
 module.exports = mongoose.model("Advance", advanceSchema);
