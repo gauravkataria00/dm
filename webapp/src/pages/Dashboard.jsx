@@ -1,19 +1,23 @@
 import MainLayout from "../components/layout/MainLayout";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "../context/ToastContext";
 import {
   getClients,
   getMilkEntries,
   getSettlements,
   getPayments,
   getAdvances,
-  getTodayInventory
+  getTodayInventory,
+  calculateTodayInventory,
 } from "../services/api";
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { push } = useToast();
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isDailyClosing, setIsDailyClosing] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState("today");
   const [dashboardData, setDashboardData] = useState({
     stats: {
@@ -227,6 +231,20 @@ export default function Dashboard() {
     }
   };
 
+  const handleDailyClosing = async () => {
+    try {
+      setIsDailyClosing(true);
+      await calculateTodayInventory();
+      await loadDashboardData();
+      push("Daily closing completed and inventory updated", "success");
+    } catch (error) {
+      console.error("Daily closing error:", error);
+      push("Failed to complete daily closing", "error");
+    } finally {
+      setIsDailyClosing(false);
+    }
+  };
+
   const generateRecentActivities = (milkEntries, settlements, payments, advances, clients) => {
     const activities = [];
 
@@ -434,6 +452,14 @@ export default function Dashboard() {
               >
                 <span>🔄</span>
                 <span>{isRefreshing ? "Refreshing..." : "Refresh"}</span>
+              </button>
+              <button
+                onClick={handleDailyClosing}
+                disabled={isDailyClosing}
+                className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center space-x-2"
+              >
+                <span>✅</span>
+                <span>{isDailyClosing ? "Closing..." : "Daily Closing"}</span>
               </button>
             </div>
           </div>

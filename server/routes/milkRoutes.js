@@ -32,6 +32,7 @@ router.get("/", async (req, res) => {
         rate: entry.rate,
         total: entry.total,
         type: entry.type,
+        shift: entry.shift,
         createdAt: entry.createdAt,
         client: {
           name: client?.name || "Unknown",
@@ -54,6 +55,8 @@ router.post("/", async (req, res) => {
     const { clientId, type, litres, fat, snf, rate, total, shift } = req.body;
     if (!clientId) return res.status(400).json({ error: "clientId is required" });
 
+    const normalizedShift = shift === "evening" ? "evening" : "morning";
+
     // Validate that client exists before saving
     const client = await Client.findById(clientId);
     if (!client) {
@@ -61,7 +64,25 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "Invalid client" });
     }
 
-    const milkEntry = new MilkEntry({ clientId, type, litres, fat, snf, rate, total, shift });
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(startOfDay);
+    endOfDay.setDate(endOfDay.getDate() + 1);
+
+    const duplicateEntry = await MilkEntry.findOne({
+      clientId,
+      type,
+      shift: normalizedShift,
+      createdAt: { $gte: startOfDay, $lt: endOfDay },
+    }).lean();
+
+    if (duplicateEntry) {
+      return res.status(409).json({
+        error: "Duplicate milk entry for this client, type, and shift already exists today",
+      });
+    }
+
+    const milkEntry = new MilkEntry({ clientId, type, litres, fat, snf, rate, total, shift: normalizedShift });
     await milkEntry.save();
 
     await milkEntry.populate('clientId', 'name phone');

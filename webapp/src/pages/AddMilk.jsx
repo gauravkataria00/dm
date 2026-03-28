@@ -18,6 +18,7 @@ export default function AddMilk() {
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSendingWhatsApp, setIsSendingWhatsApp] = useState(false);
+  const [isSavingNext, setIsSavingNext] = useState(false);
   const [isRateManuallyEdited, setIsRateManuallyEdited] = useState(false);
   const [todaySummary, setTodaySummary] = useState({
     totalEntries: 0,
@@ -34,6 +35,14 @@ export default function AddMilk() {
   const autoOpenWhatsAppAfterSave = localStorage.getItem("autoOpenWhatsAppAfterSave") !== "false";
   const defaultRateForType = type === "cow" ? cowRate : buffaloRate;
   const total = Number(litres || 0) * Number(rate || 0);
+
+  const calculateSuggestedRate = () => {
+    const fatValue = Number(fat || 0);
+    const snfValue = Number(snf || 0);
+    const fatBonus = Math.max(0, fatValue - 3.5) * 1.5;
+    const snfBonus = Math.max(0, snfValue - 8.5) * 0.8;
+    return Number((defaultRateForType + fatBonus + snfBonus).toFixed(2));
+  };
 
   const loadTodaySummary = async () => {
     try {
@@ -172,7 +181,16 @@ export default function AddMilk() {
     push("WhatsApp opened with entry details", "success");
   };
 
-  const handleSave = async () => {
+  const getNextClientId = () => {
+    const source = filteredClients.length > 0 ? filteredClients : clients;
+    if (!source.length || !selectedClientId) return "";
+    const currentIndex = source.findIndex((client) => String(client?.id) === String(selectedClientId));
+    if (currentIndex < 0) return "";
+    const nextIndex = (currentIndex + 1) % source.length;
+    return source[nextIndex]?.id || "";
+  };
+
+  const saveEntry = async (mode = "whatsapp") => {
     if (!selectedClientId) {
       push("Please select a customer", "error");
       return;
@@ -189,6 +207,7 @@ export default function AddMilk() {
     }
 
     setIsSubmitting(true);
+    setIsSavingNext(mode === "next");
     try {
       const savedEntry = await createMilkEntry({
         clientId: selectedClientId,
@@ -201,6 +220,8 @@ export default function AddMilk() {
         shift, // ✅ NEW FIELD
       });
       push("Milk entry saved", "success");
+
+      const nextClientId = mode === "next" ? getNextClientId() : "";
       setLitres("");
       setFat("");
       setSnf("");
@@ -208,18 +229,29 @@ export default function AddMilk() {
       setIsRateManuallyEdited(false);
       await loadTodaySummary();
 
-      if (autoOpenWhatsAppAfterSave) {
+      if (mode === "next" && nextClientId) {
+        const nextClient = clients.find((client) => String(client?.id) === String(nextClientId));
+        setSelectedClientId(nextClientId);
+        setSearch(`${nextClient?.name || ""} (${nextClient?.phone || "-"})`);
+        push("Saved. Switched to next client.", "success");
+      }
+
+      if (mode === "whatsapp" && autoOpenWhatsAppAfterSave) {
         setIsSendingWhatsApp(true);
         await new Promise((resolve) => setTimeout(resolve, 500));
         openWhatsAppWithEntry(savedEntry);
       }
-    } catch {
-      push("Failed to save milk entry", "error");
+    } catch (error) {
+      push(error?.message || "Failed to save milk entry", "error");
     } finally {
       setIsSubmitting(false);
       setIsSendingWhatsApp(false);
+      setIsSavingNext(false);
     }
   };
+
+  const handleSave = async () => saveEntry("whatsapp");
+  const handleSaveAndNext = async () => saveEntry("next");
 
   return (
     <MainLayout>
@@ -386,6 +418,19 @@ export default function AddMilk() {
               className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
             />
 
+            <button
+              type="button"
+              onClick={() => {
+                const suggestedRate = calculateSuggestedRate();
+                setRate(String(suggestedRate));
+                setIsRateManuallyEdited(true);
+                push(`Suggested rate applied: ₹${suggestedRate}/L`, "success");
+              }}
+              className="w-full px-3 py-2 rounded-lg text-sm font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50"
+            >
+              Smart Rate from FAT/SNF
+            </button>
+
             <input
               type="number"
               placeholder="Enter Rate (₹/L)"
@@ -432,7 +477,7 @@ export default function AddMilk() {
             <button
               type="button"
               onClick={handleSave}
-              disabled={isSubmitting || isSendingWhatsApp}
+              disabled={isSubmitting || isSendingWhatsApp || isSavingNext}
               className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isSubmitting ? (
@@ -449,6 +494,25 @@ export default function AddMilk() {
                 <>
                   <span>💾</span>
                   <span>{autoOpenWhatsAppAfterSave ? "Save Entry + WhatsApp" : "Save Entry"}</span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSaveAndNext}
+              disabled={isSubmitting || isSendingWhatsApp || isSavingNext}
+              className="w-full bg-gradient-to-r from-indigo-500 to-indigo-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isSavingNext ? (
+                <>
+                  <span className="inline-block w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+                  Saving & Switching...
+                </>
+              ) : (
+                <>
+                  <span>⏭️</span>
+                  <span>Save & Next Client</span>
                 </>
               )}
             </button>

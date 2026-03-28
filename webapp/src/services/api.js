@@ -127,7 +127,12 @@ export const createMilkEntry = async (entryData) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(entryData),
     });
-    if (!response.ok) throw new Error("Failed to create milk entry");
+    if (!response.ok) {
+      const contentType = response.headers.get("content-type") || "";
+      const isJson = contentType.includes("application/json");
+      const payload = isJson ? await response.json() : null;
+      throw new Error(payload?.error || payload?.message || "Failed to create milk entry");
+    }
     return await response.json();
   } catch (error) {
     console.error("Error creating milk entry:", error);
