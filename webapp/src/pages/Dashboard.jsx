@@ -7,18 +7,21 @@ import {
   getSettlements,
   getPayments,
   getAdvances,
-  getClientPaymentSummary,
   getTodayInventory
 } from "../services/api";
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [selectedPeriod, setSelectedPeriod] = useState("today");
   const [dashboardData, setDashboardData] = useState({
     stats: {
       totalClients: 0,
       activeClients: 0,
       totalMilkToday: 0,
+      totalEntriesToday: 0,
+      morningMilkToday: 0,
+      eveningMilkToday: 0,
       totalMilkThisMonth: 0,
       totalRevenueToday: 0,
       totalRevenueThisMonth: 0,
@@ -148,6 +151,13 @@ export default function Dashboard() {
           milkEntries.some(entry => entry.clientId === client.id)
         ).length,
         totalMilkToday: todayEntries.reduce((sum, entry) => sum + (entry.litres || 0), 0),
+        totalEntriesToday: todayEntries.length,
+        morningMilkToday: todayEntries
+          .filter(entry => entry.shift !== 'evening')
+          .reduce((sum, entry) => sum + (entry.litres || 0), 0),
+        eveningMilkToday: todayEntries
+          .filter(entry => entry.shift === 'evening')
+          .reduce((sum, entry) => sum + (entry.litres || 0), 0),
         totalMilkThisMonth: thisMonthEntries.reduce((sum, entry) => sum + (entry.litres || 0), 0),
         totalRevenueToday: todayEntries.reduce((sum, entry) => sum + getMilkRevenue(entry), 0),
         totalRevenueThisMonth: thisMonthEntries.reduce((sum, entry) => sum + getMilkRevenue(entry), 0),
@@ -204,6 +214,9 @@ export default function Dashboard() {
           totalClients: 0,
           activeClients: 0,
           totalMilkToday: 0,
+          totalEntriesToday: 0,
+          morningMilkToday: 0,
+          eveningMilkToday: 0,
           totalMilkThisMonth: 0,
           totalRevenueToday: 0,
           totalRevenueThisMonth: 0,
@@ -384,6 +397,11 @@ export default function Dashboard() {
   }
 
   const { stats, recentActivities, topClients, monthlyTrends, financialSummary } = dashboardData;
+  const isToday = selectedPeriod === "today";
+  const periodLabel = isToday ? "Today" : "This Month";
+  const periodMilk = isToday ? stats.totalMilkToday : stats.totalMilkThisMonth;
+  const periodRevenue = isToday ? stats.totalRevenueToday : stats.totalRevenueThisMonth;
+  const maxTrendLitres = Math.max(1, ...monthlyTrends.map((day) => day.litres || 0));
 
   return (
     <MainLayout>
@@ -400,13 +418,37 @@ export default function Dashboard() {
             </p>
           </div>
           <div className="flex-shrink-0">
-            <button
-              onClick={loadDashboardData}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center space-x-2"
-            >
-              <span>🔄</span>
-              <span>Refresh</span>
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+                <button
+                  onClick={() => setSelectedPeriod("today")}
+                  className={`px-3 py-1.5 text-sm rounded-md transition ${
+                    isToday
+                      ? "bg-green-600 text-white"
+                      : "text-gray-600 dark:text-gray-300"
+                  }`}
+                >
+                  Today
+                </button>
+                <button
+                  onClick={() => setSelectedPeriod("month")}
+                  className={`px-3 py-1.5 text-sm rounded-md transition ${
+                    !isToday
+                      ? "bg-green-600 text-white"
+                      : "text-gray-600 dark:text-gray-300"
+                  }`}
+                >
+                  Month
+                </button>
+              </div>
+              <button
+                onClick={loadDashboardData}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center space-x-2"
+              >
+                <span>🔄</span>
+                <span>Refresh</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -422,9 +464,9 @@ export default function Dashboard() {
           trend="+12%"
         />
         <MetricCard
-          title="Today's Milk"
-          value={`${stats.totalMilkToday.toFixed(1)}L`}
-          subtitle={`${stats.totalRevenueToday.toFixed(0)} revenue`}
+          title={`${periodLabel} Milk`}
+          value={`${periodMilk.toFixed(1)}L`}
+          subtitle={`₹${periodRevenue.toFixed(0)} revenue`}
           icon="🥛"
           color="from-green-500 to-green-600"
           trend="+8%"
@@ -456,6 +498,30 @@ export default function Dashboard() {
           icon="📦"
           color={stats.currentInventory > 50 ? "from-emerald-500 to-emerald-600" : "from-red-500 to-red-600"}
           trend={stats.currentInventory > 50 ? "Good" : "Low"}
+        />
+        <MetricCard
+          title="Morning / Evening"
+          value={`${stats.morningMilkToday.toFixed(1)} / ${stats.eveningMilkToday.toFixed(1)}L`}
+          subtitle="Today shift split"
+          icon="🌅"
+          color="from-amber-500 to-orange-500"
+          trend="Shift"
+        />
+        <MetricCard
+          title="Today's Entries"
+          value={stats.totalEntriesToday}
+          subtitle="Milk records created"
+          icon="🧾"
+          color="from-cyan-500 to-cyan-600"
+          trend="Live"
+        />
+        <MetricCard
+          title="Active Advances"
+          value={stats.activeAdvances}
+          subtitle="Clients with active advance"
+          icon="💵"
+          color="from-indigo-500 to-indigo-600"
+          trend="Track"
         />
       </div>
 
@@ -508,7 +574,7 @@ export default function Dashboard() {
                     <div
                       className="bg-gradient-to-t from-blue-500 to-blue-400 rounded-t absolute bottom-0 w-full transition-all duration-500 flex items-end justify-center pb-2"
                       style={{
-                        height: `${day.litres > 0 ? (day.litres / Math.max(...monthlyTrends.map(d => d.litres))) * 100 : 0}%`
+                        height: `${day.litres > 0 ? (day.litres / maxTrendLitres) * 100 : 0}%`
                       }}
                     >
                       <div className="text-xs font-bold text-white">
@@ -612,7 +678,7 @@ export default function Dashboard() {
           <ActionButton
             icon="💰"
             title="Create Settlement"
-            onClick={() => navigate('/settlements')}
+            onClick={() => navigate('/reports')}
             color="bg-white/20 hover:bg-white/30"
           />
           <ActionButton
