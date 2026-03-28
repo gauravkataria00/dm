@@ -1,6 +1,28 @@
 import { API_BASE_URL, API_FALLBACK_BASE_URL } from "./config";
 
 const API_BASE_URL_WITH_API = `${API_BASE_URL}/api`;
+const nativeFetch = globalThis.fetch.bind(globalThis);
+
+const getAuthToken = () =>
+  localStorage.getItem("tenantToken") ||
+  localStorage.getItem("adminToken") ||
+  localStorage.getItem("platformToken") ||
+  "";
+
+const fetch = (input, init = {}) => {
+  const token = getAuthToken();
+  const incomingHeaders = init.headers || {};
+  const headers = new Headers(incomingHeaders);
+
+  if (token && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  return nativeFetch(input, {
+    ...init,
+    headers,
+  });
+};
 
 // Get all clients
 export const getClients = async () => {

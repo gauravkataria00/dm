@@ -128,25 +128,32 @@ export default function Settings() {
           </div>
         </div>
 
-        <div className="bg-gray-800 p-4 rounded-xl mt-4">
-          <h2 className="text-lg font-semibold mb-3">🛠 Help & Support</h2>
-          <p className="text-sm text-gray-400 mb-3">
-            Need help? Contact us on WhatsApp
-          </p>
-          <div className="flex flex-col gap-2">
-            <button
-              onClick={() => window.open("https://wa.me/918059172716", "_blank")}
-              className="bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg"
-            >
-              Chat Support 1
-            </button>
+        <div className="rounded-2xl bg-gray-50 p-6 shadow-md dark:bg-gray-800/40">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Help & Support</h2>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">Need help? Contact our support team</p>
 
-            <button
-              onClick={() => window.open("https://wa.me/918708195687", "_blank")}
-              className="bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg"
-            >
-              Chat Support 2
-            </button>
+          <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="rounded-2xl bg-white p-6 shadow-md transition duration-300 hover:scale-105 dark:bg-gray-900">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Gavi Support Specialist</h3>
+              <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">Get help with dairy operations and usage</p>
+              <button
+                onClick={() => window.open("https://wa.me/918059172716", "_blank")}
+                className="mt-5 w-full rounded-lg bg-blue-600 px-4 py-2.5 font-medium text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                Contact Support
+              </button>
+            </div>
+
+            <div className="rounded-2xl bg-white p-6 shadow-md transition duration-300 hover:scale-105 dark:bg-gray-900">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Admin – Himanshu</h3>
+              <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">For account issues or technical help</p>
+              <button
+                onClick={() => window.open("https://wa.me/918708195687", "_blank")}
+                className="mt-5 w-full rounded-lg bg-blue-600 px-4 py-2.5 font-medium text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                Contact Admin
+              </button>
+            </div>
           </div>
         </div>
 

@@ -1,4 +1,4 @@
-import { HashRouter, Routes, Route } from "react-router-dom";
+import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import Dashboard from "../pages/Dashboard";
 import Clients from "../pages/Clients";
@@ -10,6 +10,8 @@ import Payments from "../pages/Payments";
 import Advances from "../pages/Advances";
 import Inventory from "../pages/Inventory";
 import Login from "../pages/Login";
+import PlatformLogin from "../pages/PlatformLogin";
+import PlatformConsole from "../pages/PlatformConsole";
 import ProtectedRoute from "../components/ProtectedRoute";
 
 export default function AppRoutes() {
@@ -17,6 +19,9 @@ export default function AppRoutes() {
     <HashRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/platform/login" element={<PlatformLogin />} />
+        <Route path="/platform/console" element={<PlatformConsole />} />
+        <Route path="/tenant" element={<Navigate to="/" replace />} />
         <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />

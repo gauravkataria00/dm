@@ -1,11 +1,14 @@
 const express = require("express");
 const router = express.Router();
 const ConsumerPayment = require("../models/ConsumerPayment");
+const Consumer = require("../models/Consumer");
+const mongoose = require("mongoose");
 
 // Get all consumer payments
 router.get("/", async (req, res) => {
   try {
-    let payments = await ConsumerPayment.find()
+    const { tenantId } = req.user;
+    let payments = await ConsumerPayment.find({ tenantId })
       .populate('consumerId', 'name phone')
       .sort({ createdAt: -1 });
     
@@ -38,7 +41,8 @@ router.get("/", async (req, res) => {
 // Get payments for a specific consumer
 router.get("/consumer/:consumerId", async (req, res) => {
   try {
-    let payments = await ConsumerPayment.find({ consumerId: req.params.consumerId })
+    const { tenantId } = req.user;
+    let payments = await ConsumerPayment.find({ tenantId, consumerId: req.params.consumerId })
       .populate('consumerId', 'name phone')
       .sort({ createdAt: -1 });
     
@@ -71,6 +75,7 @@ router.get("/consumer/:consumerId", async (req, res) => {
 // Create new consumer payment
 router.post("/", async (req, res) => {
   try {
+    const { tenantId } = req.user;
     const { consumer_id, amount, payment_date, payment_method, notes } = req.body;
 
     if (!consumer_id || !amount || !payment_date) {
@@ -78,14 +83,14 @@ router.post("/", async (req, res) => {
     }
 
     // Validate that consumer exists before saving
-    const Consumer = require("../models/Consumer");
-    const consumer = await Consumer.findById(consumer_id);
+    const consumer = await Consumer.findOne({ _id: consumer_id, tenantId });
     if (!consumer) {
       console.error(`Invalid consumer_id: ${consumer_id}`);
       return res.status(400).json({ error: "Invalid consumer" });
     }
 
     const payment = new ConsumerPayment({
+      tenantId,
       consumerId: consumer_id,
       amount,
       date: payment_date,
@@ -119,9 +124,14 @@ router.post("/", async (req, res) => {
 // Get payment summary for a consumer
 router.get("/summary/:consumerId", async (req, res) => {
   try {
-    const mongoose = require('mongoose');
+    const { tenantId } = req.user;
     const summary = await ConsumerPayment.aggregate([
-      { $match: { consumerId: new mongoose.Types.ObjectId(req.params.consumerId) } },
+      {
+        $match: {
+          tenantId: new mongoose.Types.ObjectId(tenantId),
+          consumerId: new mongoose.Types.ObjectId(req.params.consumerId),
+        }
+      },
       {
         $group: {
           _id: null,

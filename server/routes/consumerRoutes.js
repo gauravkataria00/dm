@@ -3,11 +3,13 @@ const router = express.Router();
 const Consumer = require("../models/Consumer");
 const ConsumerSale = require("../models/ConsumerSale");
 const ConsumerPayment = require("../models/ConsumerPayment");
+const mongoose = require("mongoose");
 
 // Get all consumers
 router.get("/", async (req, res) => {
   try {
-    const consumers = await Consumer.find().sort({ createdAt: -1 });
+    const { tenantId } = req.user;
+    const consumers = await Consumer.find({ tenantId }).sort({ createdAt: -1 });
     res.json(consumers.map(consumer => ({
       id: consumer._id,
       name: consumer.name,
@@ -25,7 +27,8 @@ router.get("/", async (req, res) => {
 // Get single consumer by ID
 router.get("/:id", async (req, res) => {
   try {
-    const consumer = await Consumer.findById(req.params.id);
+    const { tenantId } = req.user;
+    const consumer = await Consumer.findOne({ _id: req.params.id, tenantId });
     if (!consumer) return res.status(404).json({ error: "Consumer not found" });
     res.json({
       id: consumer._id,
@@ -44,6 +47,7 @@ router.get("/:id", async (req, res) => {
 // Create new consumer
 router.post("/", async (req, res) => {
   try {
+    const { tenantId } = req.user;
     const { name, phone, address, type, credit_limit } = req.body;
 
     if (!name) {
@@ -51,6 +55,7 @@ router.post("/", async (req, res) => {
     }
 
     const consumer = new Consumer({
+      tenantId,
       name,
       phone,
       address,
@@ -76,15 +81,20 @@ router.post("/", async (req, res) => {
 // Update consumer
 router.put("/:id", async (req, res) => {
   try {
+    const { tenantId } = req.user;
     const { name, phone, address, type, credit_limit } = req.body;
 
-    const consumer = await Consumer.findByIdAndUpdate(req.params.id, {
-      name,
-      phone,
-      address,
-      type,
-      credit_limit
-    }, { new: true });
+    const consumer = await Consumer.findOneAndUpdate(
+      { _id: req.params.id, tenantId },
+      {
+        name,
+        phone,
+        address,
+        type,
+        credit_limit,
+      },
+      { new: true }
+    );
 
     if (!consumer) return res.status(404).json({ error: "Consumer not found" });
 
@@ -105,7 +115,8 @@ router.put("/:id", async (req, res) => {
 // Delete consumer
 router.delete("/:id", async (req, res) => {
   try {
-    await Consumer.findByIdAndDelete(req.params.id);
+    const { tenantId } = req.user;
+    await Consumer.findOneAndDelete({ _id: req.params.id, tenantId });
     res.json({ message: "Consumer deleted successfully" });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -115,17 +126,21 @@ router.delete("/:id", async (req, res) => {
 // Get consumer payment summary
 router.get("/:id/summary", async (req, res) => {
   try {
+    const { tenantId } = req.user;
+    const tenantObjectId = new mongoose.Types.ObjectId(tenantId);
+    const consumerObjectId = new mongoose.Types.ObjectId(req.params.id);
+
     const [totalOwed, totalPaid, pendingSales] = await Promise.all([
       ConsumerSale.aggregate([
-        { $match: { consumerId: require('mongoose').Types.ObjectId(req.params.id) } },
+        { $match: { tenantId: tenantObjectId, consumerId: consumerObjectId } },
         { $group: { _id: null, amount: { $sum: "$total" } } }
       ]),
       ConsumerPayment.aggregate([
-        { $match: { consumerId: require('mongoose').Types.ObjectId(req.params.id) } },
+        { $match: { tenantId: tenantObjectId, consumerId: consumerObjectId } },
         { $group: { _id: null, amount: { $sum: "$amount" } } }
       ]),
       ConsumerSale.aggregate([
-        { $match: { consumerId: require('mongoose').Types.ObjectId(req.params.id), payment_status: 'pending' } },
+        { $match: { tenantId: tenantObjectId, consumerId: consumerObjectId, payment_status: 'pending' } },
         { $group: { _id: null, amount: { $sum: "$total" } } }
       ])
     ]);

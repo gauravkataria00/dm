@@ -2,19 +2,20 @@ const express = require("express");
 const router = express.Router();
 const MilkEntry = require("../models/MilkEntry");
 const Client = require("../models/Client");
+const mongoose = require("mongoose");
 
 router.get("/", async (req, res) => {
   try {
-    const milkEntries = await MilkEntry.find().sort({ createdAt: -1 }).lean();
+    const { tenantId } = req.user;
+    const milkEntries = await MilkEntry.find({ tenantId }).sort({ createdAt: -1 }).lean();
 
     // Gather client IDs (even if some are invalid/missing)
-    const mongoose = require('mongoose');
     const clientIds = [...new Set(milkEntries
       .map(entry => entry.clientId)
       .filter(id => id && mongoose.Types.ObjectId.isValid(id))
       .map(id => id.toString()))];
 
-    const clients = await Client.find({ _id: { $in: clientIds } }).select('name phone').lean();
+    const clients = await Client.find({ tenantId, _id: { $in: clientIds } }).select('name phone').lean();
     const clientMap = clients.reduce((acc, client) => {
       acc[client._id.toString()] = client;
       return acc;
@@ -52,13 +53,14 @@ router.get("/", async (req, res) => {
 
 router.post("/", async (req, res) => {
   try {
+    const { tenantId } = req.user;
     const { clientId, type, litres, fat, snf, rate, total, shift } = req.body;
     if (!clientId) return res.status(400).json({ error: "clientId is required" });
 
     const normalizedShift = shift === "evening" ? "evening" : "morning";
 
     // Validate that client exists before saving
-    const client = await Client.findById(clientId);
+    const client = await Client.findOne({ _id: clientId, tenantId });
     if (!client) {
       console.error(`Invalid clientId: ${clientId}`);
       return res.status(400).json({ error: "Invalid client" });
@@ -70,6 +72,7 @@ router.post("/", async (req, res) => {
     endOfDay.setDate(endOfDay.getDate() + 1);
 
     const duplicateEntry = await MilkEntry.findOne({
+      tenantId,
       clientId,
       type,
       shift: normalizedShift,
@@ -82,7 +85,7 @@ router.post("/", async (req, res) => {
       });
     }
 
-    const milkEntry = new MilkEntry({ clientId, type, litres, fat, snf, rate, total, shift: normalizedShift });
+    const milkEntry = new MilkEntry({ tenantId, clientId, type, litres, fat, snf, rate, total, shift: normalizedShift });
     await milkEntry.save();
 
     await milkEntry.populate('clientId', 'name phone');
@@ -112,6 +115,7 @@ router.post("/", async (req, res) => {
 
 router.delete("/:id", async (req, res) => {
   try {
+    const { tenantId } = req.user;
     const { id } = req.params;
     
     console.log("DELETE request received for ID:", id);
@@ -123,7 +127,7 @@ router.delete("/:id", async (req, res) => {
 
     console.log("Attempting to delete entry with ID:", id);
     
-    const deletedEntry = await MilkEntry.findByIdAndDelete(id);
+    const deletedEntry = await MilkEntry.findOneAndDelete({ _id: id, tenantId });
     
     if (!deletedEntry) {
       console.warn("Entry not found for ID:", id);

@@ -1,6 +1,11 @@
 const mongoose = require("mongoose");
 
 const consumerSaleSchema = new mongoose.Schema({
+  tenantId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Tenant",
+    required: true,
+  },
   consumerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Consumer',
@@ -35,5 +40,7 @@ const consumerSaleSchema = new mongoose.Schema({
     default: Date.now,
   },
 });
+
+consumerSaleSchema.index({ tenantId: 1, createdAt: -1 });
 
 module.exports = mongoose.model("ConsumerSale", consumerSaleSchema);

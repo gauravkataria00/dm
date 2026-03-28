@@ -2,11 +2,14 @@ const express = require("express");
 const router = express.Router();
 const Settlement = require("../models/Settlement");
 const MilkEntry = require("../models/MilkEntry");
+const Client = require("../models/Client");
+const mongoose = require("mongoose");
 
 // Get all settlements with client names
 router.get("/", async (req, res) => {
   try {
-    let settlements = await Settlement.find()
+    const { tenantId } = req.user;
+    let settlements = await Settlement.find({ tenantId })
       .populate('clientId', 'name phone')
       .sort({ createdAt: -1 })
       .lean();
@@ -41,7 +44,8 @@ router.get("/", async (req, res) => {
 // Get settlements for a specific client
 router.get("/client/:clientId", async (req, res) => {
   try {
-    let settlements = await Settlement.find({ clientId: req.params.clientId })
+    const { tenantId } = req.user;
+    let settlements = await Settlement.find({ tenantId, clientId: req.params.clientId })
       .populate('clientId', 'name phone')
       .sort({ createdAt: -1 })
       .lean();
@@ -76,6 +80,7 @@ router.get("/client/:clientId", async (req, res) => {
 // Create a new settlement for a client (calculate for a period)
 router.post("/", async (req, res) => {
   try {
+    const { tenantId } = req.user;
     const { clientId, startDate, endDate } = req.body;
 
     if (!clientId || !startDate || !endDate) {
@@ -83,18 +88,17 @@ router.post("/", async (req, res) => {
     }
 
     // Validate that client exists before saving
-    const Client = require("../models/Client");
-    const client = await Client.findById(clientId);
+    const client = await Client.findOne({ _id: clientId, tenantId });
     if (!client) {
       console.error(`Invalid clientId: ${clientId}`);
       return res.status(400).json({ error: "Invalid client" });
     }
 
     // Calculate total milk and amount for the period
-    const mongoose = require('mongoose');
     const milkData = await MilkEntry.aggregate([
       {
         $match: {
+          tenantId: new mongoose.Types.ObjectId(tenantId),
           clientId: new mongoose.Types.ObjectId(clientId),
           createdAt: {
             $gte: new Date(startDate),
@@ -115,6 +119,7 @@ router.post("/", async (req, res) => {
     const totalAmount = milkData[0]?.totalAmount || 0;
 
     const settlement = new Settlement({
+      tenantId,
       clientId,
       startDate,
       endDate,
@@ -150,13 +155,18 @@ router.post("/", async (req, res) => {
 // Update settlement status
 router.put("/:id", async (req, res) => {
   try {
+    const { tenantId } = req.user;
     const { status } = req.body;
 
     if (!status) {
       return res.status(400).json({ error: "status is required" });
     }
 
-    const settlement = await Settlement.findByIdAndUpdate(req.params.id, { status }, { new: true });
+    const settlement = await Settlement.findOneAndUpdate(
+      { _id: req.params.id, tenantId },
+      { status },
+      { new: true }
+    );
     if (!settlement) {
       return res.status(404).json({ error: "Settlement not found" });
     }

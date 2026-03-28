@@ -14,6 +14,8 @@ const consumerRoutes = require("./routes/consumerRoutes");
 const consumerSalesRoutes = require("./routes/consumerSalesRoutes");
 const consumerPaymentRoutes = require("./routes/consumerPaymentRoutes");
 const inventoryRoutes = require("./routes/inventoryRoutes");
+const platformRoutes = require("./routes/platformRoutes");
+const { requireTenantAuth } = require("./middleware/tenantAuth");
 
 const app = express();
 
@@ -242,16 +244,17 @@ app.post("/api/auth/login", (req, res) => {
   });
 });
 
-app.use("/api/clients", clientRoutes);
+app.use("/api/clients", requireTenantAuth, clientRoutes);
 console.log("Mounting /api/milk routes");
-app.use("/api/milk", milkRoutes);
-app.use("/api/settlements", settlementRoutes);
-app.use("/api/payments", paymentRoutes);
-app.use("/api/advances", advanceRoutes);
-app.use("/api/consumers", consumerRoutes);
-app.use("/api/consumer-sales", consumerSalesRoutes);
-app.use("/api/consumer-payments", consumerPaymentRoutes);
-app.use("/api/inventory", inventoryRoutes);
+app.use("/api/milk", requireTenantAuth, milkRoutes);
+app.use("/api/settlements", requireTenantAuth, settlementRoutes);
+app.use("/api/payments", requireTenantAuth, paymentRoutes);
+app.use("/api/advances", requireTenantAuth, advanceRoutes);
+app.use("/api/consumers", requireTenantAuth, consumerRoutes);
+app.use("/api/consumer-sales", requireTenantAuth, consumerSalesRoutes);
+app.use("/api/consumer-payments", requireTenantAuth, consumerPaymentRoutes);
+app.use("/api/inventory", requireTenantAuth, inventoryRoutes);
+app.use("/api/platform", platformRoutes);
 
 app.get("/ping", (req, res) => {
   res.send("pong");

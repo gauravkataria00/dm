@@ -4,6 +4,7 @@ import { API_BASE_URL, API_FALLBACK_BASE_URL } from "../services/config";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -26,46 +27,70 @@ export default function Login() {
         body: loginBody
       };
 
-      const primaryLoginUrl = `${API_BASE_URL}/api/auth/login`;
-      const fallbackLoginUrl = `${API_FALLBACK_BASE_URL}/api/auth/login`;
+      const primaryTenantLoginUrl = `${API_BASE_URL}/api/platform/tenant-admin/login`;
+      const fallbackTenantLoginUrl = `${API_FALLBACK_BASE_URL}/api/platform/tenant-admin/login`;
+      const primaryLegacyLoginUrl = `${API_BASE_URL}/api/auth/login`;
+      const fallbackLegacyLoginUrl = `${API_FALLBACK_BASE_URL}/api/auth/login`;
 
-      let res;
-      try {
-        res = await fetch(primaryLoginUrl, requestOptions);
-      } catch (primaryError) {
-        if (API_FALLBACK_BASE_URL && API_FALLBACK_BASE_URL !== API_BASE_URL) {
-          res = await fetch(fallbackLoginUrl, requestOptions);
-        } else {
-          throw primaryError;
+      const attemptLogin = async (primaryUrl, fallbackUrl) => {
+        let res;
+        try {
+          res = await fetch(primaryUrl, requestOptions);
+        } catch (primaryError) {
+          if (API_FALLBACK_BASE_URL && API_FALLBACK_BASE_URL !== API_BASE_URL) {
+            res = await fetch(fallbackUrl, requestOptions);
+          } else {
+            throw primaryError;
+          }
         }
+
+        if (!res.ok && res.status >= 500 && API_FALLBACK_BASE_URL && API_FALLBACK_BASE_URL !== API_BASE_URL) {
+          res = await fetch(fallbackUrl, requestOptions);
+        }
+
+        const contentType = res.headers.get("content-type") || "";
+        const isJsonResponse = contentType.includes("application/json");
+        const payload = isJsonResponse ? await res.json() : await res.text();
+
+        return { res, payload, isJsonResponse };
+      };
+
+      let result = await attemptLogin(primaryTenantLoginUrl, fallbackTenantLoginUrl);
+
+      if (!(result.res.ok && result.payload?.success)) {
+        result = await attemptLogin(primaryLegacyLoginUrl, fallbackLegacyLoginUrl);
       }
 
-      if (!res.ok && res.status >= 500 && API_FALLBACK_BASE_URL && API_FALLBACK_BASE_URL !== API_BASE_URL) {
-        res = await fetch(fallbackLoginUrl, requestOptions);
-      }
+      if (result.res.ok && result.payload?.success) {
+        const isTenantAdminLogin = Boolean(result.payload?.tenant);
 
-      const contentType = res.headers.get("content-type") || "";
-      const isJsonResponse = contentType.includes("application/json");
-      const payload = isJsonResponse ? await res.json() : await res.text();
+        if (isTenantAdminLogin) {
+          localStorage.removeItem("adminToken");
+          localStorage.setItem("tenantToken", result.payload.token);
+          localStorage.setItem("tenantAdminName", result.payload?.admin?.name || "Tenant Admin");
+          localStorage.setItem("tenantName", result.payload?.tenant?.name || "");
+          window.location.href = "/";
+          return;
+        }
 
-      if (res.ok && payload?.success) {
-        localStorage.setItem("adminToken", payload.token);
+        localStorage.removeItem("tenantToken");
+        localStorage.setItem("adminToken", result.payload.token);
         window.location.href = "/";
         return;
       }
 
-      if (!res.ok) {
-        if (isJsonResponse && payload?.message) {
-          setError(payload.message);
+      if (!result.res.ok) {
+        if (result.isJsonResponse && result.payload?.message) {
+          setError(result.payload.message);
           return;
         }
 
-        if (isJsonResponse && payload?.error) {
-          setError(payload.error);
+        if (result.isJsonResponse && result.payload?.error) {
+          setError(result.payload.error);
           return;
         }
 
-        setError(`Server error (${res.status})`);
+        setError(`Server error (${result.res.status})`);
         return;
       }
 
@@ -97,7 +122,7 @@ export default function Login() {
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="username"
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-black dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300"
-              placeholder="Himanshu@admin.com"
+              placeholder="Enter email"
               required
               disabled={isLoading}
             />
@@ -107,16 +132,27 @@ export default function Login() {
             <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2 transition-all duration-300">
               Password
             </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-black dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300"
-              placeholder="Enter password"
-              required
-              disabled={isLoading}
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                className="w-full px-4 py-3 pr-20 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300"
+                placeholder="Enter password"
+                required
+                disabled={isLoading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute inset-y-0 right-2 my-auto h-8 px-2 rounded-md text-sm font-medium text-green-700 hover:text-green-800 dark:text-green-300 dark:hover:text-green-200 bg-transparent"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                disabled={isLoading}
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
           </div>
 
           <button
