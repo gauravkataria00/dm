@@ -1,9 +1,7 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../services/config";
 
 export default function PlatformLogin() {
-  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -43,14 +41,8 @@ export default function PlatformLogin() {
 
       localStorage.setItem("platformToken", payload.token);
       localStorage.setItem("platformAdminName", payload?.admin?.name || "Owner");
-
-      if (payload?.admin || payload?.success === true) {
-        navigate("/platform/console");
-        return;
-      }
-
-      localStorage.setItem("adminToken", payload.token);
-      navigate("/");
+      console.log("TOKEN:", localStorage.getItem("platformToken"));
+      window.location.href = "/#/platform/console";
     } catch (err) {
       console.error(err);
       setError("Platform login failed");

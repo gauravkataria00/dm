@@ -16,23 +16,23 @@ export default function PlatformConsole() {
   const [adminPassword, setAdminPassword] = useState("");
   const [showAdminPassword, setShowAdminPassword] = useState(false);
 
-  const token = localStorage.getItem("platformToken");
+  const getPlatformToken = () => localStorage.getItem("platformToken") || "";
   const formInputClass =
     "w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 " +
     "hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 " +
     "dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder:text-gray-400 dark:hover:border-gray-500";
 
-  const authHeaders = {
+  const getAuthHeaders = () => ({
     "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-  };
+    Authorization: `Bearer ${getPlatformToken()}`,
+  });
 
   const loadTenants = async () => {
     setLoading(true);
     setError("");
     try {
       const res = await fetch(`${API_BASE_URL}/api/platform/tenants`, {
-        headers: authHeaders,
+        headers: getAuthHeaders(),
       });
       const payload = await res.json().catch(() => []);
       if (!res.ok) {
@@ -47,11 +47,14 @@ export default function PlatformConsole() {
   };
 
   useEffect(() => {
+    const token = getPlatformToken();
+    console.log("TOKEN:", token);
+
     if (!token) {
-      setError("Platform token missing. Please login again.");
-      setLoading(false);
+      window.location.href = "/#/platform/login";
       return;
     }
+
     loadTenants();
   }, []);
 
@@ -64,7 +67,7 @@ export default function PlatformConsole() {
     try {
       const res = await fetch(`${API_BASE_URL}/api/platform/tenants`, {
         method: "POST",
-        headers: authHeaders,
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           tenantName,
           tenantCode,
@@ -120,7 +123,7 @@ export default function PlatformConsole() {
 
       const res = await fetch(`${API_BASE_URL}/api/platform/tenants/${tenant.id}`, {
         method: "PUT",
-        headers: authHeaders,
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           tenantName: nextTenantName,
           monthlyCharge: Number(nextMonthlyCharge || 0),
@@ -149,7 +152,7 @@ export default function PlatformConsole() {
 
       const res = await fetch(`${API_BASE_URL}/api/platform/tenants/${tenant.id}`, {
         method: "DELETE",
-        headers: authHeaders,
+        headers: getAuthHeaders(),
       });
 
       const payload = await res.json().catch(() => ({}));
