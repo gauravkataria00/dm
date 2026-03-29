@@ -15,13 +15,26 @@ export default function PlatformLogin() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/platform/login`, {
+      let res = await fetch(`${API_BASE_URL}/api/platform/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
+      if (res.status === 404) {
+        res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+      }
+
       const payload = await res.json().catch(() => ({}));
+
+      if (res.status === 404) {
+        setError("Backend platform routes not deployed yet. Please redeploy backend on Render.");
+        return;
+      }
 
       if (!res.ok || !payload?.token) {
         setError(payload?.error || "Invalid platform credentials");
@@ -30,7 +43,14 @@ export default function PlatformLogin() {
 
       localStorage.setItem("platformToken", payload.token);
       localStorage.setItem("platformAdminName", payload?.admin?.name || "Owner");
-      navigate("/platform/console");
+
+      if (payload?.admin || payload?.success === true) {
+        navigate("/platform/console");
+        return;
+      }
+
+      localStorage.setItem("adminToken", payload.token);
+      navigate("/");
     } catch (err) {
       console.error(err);
       setError("Platform login failed");
