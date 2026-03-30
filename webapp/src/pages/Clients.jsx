@@ -38,18 +38,24 @@ export default function Clients() {
 
   const handleAddClient = async (e) => {
     e.preventDefault();
+    const phoneDigits = String(formData.phone || "").replace(/\D/g, "").slice(0, 10);
+
     if (!formData.name.trim()) {
       setError("Client name is required");
       return;
     }
-    if (!formData.phone.trim() || formData.phone.length < 10) {
-      setError("Valid phone number is required");
+    if (phoneDigits.length !== 10) {
+      setError("Phone number must be exactly 10 digits");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const newClient = await createClient(formData);
+      const formattedPhone = `+91${phoneDigits}`;
+      const newClient = await createClient({
+        ...formData,
+        phone: formattedPhone,
+      });
       setClients([...clients, newClient]);
       setFormData({ name: "", phone: "" });
       setSuccess("Client added successfully!");
@@ -116,13 +122,23 @@ export default function Clients() {
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className="px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
             />
-            <input
-              type="tel"
-              placeholder="Phone Number"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
-            />
+            <div className="flex items-center rounded-lg border border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-800 focus-within:ring-2 focus-within:ring-green-500">
+              <span className="px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-200 border-r border-gray-300 dark:border-gray-600">
+                +91
+              </span>
+              <input
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
+                placeholder="10 digit mobile number"
+                value={formData.phone}
+                onChange={(e) => {
+                  const phoneDigits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                  setFormData({ ...formData, phone: phoneDigits });
+                }}
+                className="w-full bg-transparent px-4 py-3 text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none"
+              />
+            </div>
           </div>
           <button
             type="submit"
