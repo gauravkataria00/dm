@@ -29,8 +29,6 @@ export default function Login() {
 
       const primaryTenantLoginUrl = `${API_BASE_URL}/api/platform/tenant-admin/login`;
       const fallbackTenantLoginUrl = `${API_FALLBACK_BASE_URL}/api/platform/tenant-admin/login`;
-      const primaryLegacyLoginUrl = `${API_BASE_URL}/api/auth/login`;
-      const fallbackLegacyLoginUrl = `${API_FALLBACK_BASE_URL}/api/auth/login`;
 
       const attemptLogin = async (primaryUrl, fallbackUrl) => {
         let res;
@@ -55,27 +53,38 @@ export default function Login() {
         return { res, payload, isJsonResponse };
       };
 
-      let result = await attemptLogin(primaryTenantLoginUrl, fallbackTenantLoginUrl);
-
-      if (!(result.res.ok && result.payload?.success)) {
-        result = await attemptLogin(primaryLegacyLoginUrl, fallbackLegacyLoginUrl);
-      }
+      const result = await attemptLogin(primaryTenantLoginUrl, fallbackTenantLoginUrl);
 
       if (result.res.ok && result.payload?.success) {
         const isTenantAdminLogin = Boolean(result.payload?.tenant);
+        const token = result.payload?.token || "";
+
+        if (!token) {
+          setError("Login succeeded but token missing");
+          return;
+        }
 
         if (isTenantAdminLogin) {
-          localStorage.removeItem("adminToken");
-          localStorage.setItem("tenantToken", result.payload.token);
+          localStorage.setItem("token", token);
           localStorage.setItem("tenantAdminName", result.payload?.admin?.name || "Tenant Admin");
           localStorage.setItem("tenantName", result.payload?.tenant?.name || "");
+
+          const verifyRes = await fetch(`${API_BASE_URL}/api/clients`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (!verifyRes.ok) {
+            const payload = await verifyRes.json().catch(() => ({}));
+            localStorage.removeItem("token");
+            setError(payload?.error || payload?.message || "Token validation failed after login");
+            return;
+          }
+
           window.location.href = "/";
           return;
         }
 
-        localStorage.removeItem("tenantToken");
-        localStorage.setItem("adminToken", result.payload.token);
-        window.location.href = "/";
+        setError("This login is not allowed on tenant panel");
         return;
       }
 

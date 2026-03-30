@@ -5,11 +5,18 @@ const MilkEntry = require("../models/MilkEntry");
 const ConsumerSale = require("../models/ConsumerSale");
 const mongoose = require("mongoose");
 
+const scopedFilter = (req, extra = {}) => {
+  const adminId = req.user.id;
+  return {
+    adminId,
+    ...extra,
+  };
+};
+
 // Get all inventory records
 router.get("/", async (req, res) => {
   try {
-    const { tenantId } = req.user;
-    const inventory = await Inventory.find({ tenantId }).sort({ date: -1, createdAt: -1 });
+    const inventory = await Inventory.find(scopedFilter(req)).sort({ date: -1, createdAt: -1 });
     res.json(inventory.map(item => ({
       id: item._id,
       type: item.type,
@@ -28,8 +35,7 @@ router.get("/", async (req, res) => {
 // Get inventory for a specific date
 router.get("/date/:date", async (req, res) => {
   try {
-    const { tenantId } = req.user;
-    const inventory = await Inventory.find({ tenantId, date: req.params.date }).sort({ createdAt: -1 });
+    const inventory = await Inventory.find(scopedFilter(req, { date: req.params.date })).sort({ createdAt: -1 });
     res.json(inventory.map(item => ({
       id: item._id,
       type: item.type,
@@ -48,9 +54,8 @@ router.get("/date/:date", async (req, res) => {
 // Get today's inventory
 router.get("/today", async (req, res) => {
   try {
-    const { tenantId } = req.user;
     const today = new Date().toISOString().split('T')[0];
-    const inventory = await Inventory.find({ tenantId, date: today }).sort({ createdAt: -1 });
+    const inventory = await Inventory.find(scopedFilter(req, { date: today })).sort({ createdAt: -1 });
     res.json(inventory.map(item => ({
       id: item._id,
       type: item.type,
@@ -69,7 +74,8 @@ router.get("/today", async (req, res) => {
 // Create new inventory record
 router.post("/", async (req, res) => {
   try {
-    const { tenantId } = req.user;
+    const { tenantId, id } = req.user;
+    const adminId = id;
     const { type, opening_stock, received, sold, closing_stock, date } = req.body;
 
     if (!type || !date) {
@@ -78,6 +84,7 @@ router.post("/", async (req, res) => {
 
     const inventory = new Inventory({
       tenantId,
+      adminId,
       type,
       opening_stock: opening_stock || 0,
       received: received || 0,
@@ -106,11 +113,10 @@ router.post("/", async (req, res) => {
 // Update inventory record
 router.put("/:id", async (req, res) => {
   try {
-    const { tenantId } = req.user;
     const { type, opening_stock, received, sold, closing_stock, date } = req.body;
 
     const inventory = await Inventory.findOneAndUpdate(
-      { _id: req.params.id, tenantId },
+      scopedFilter(req, { _id: req.params.id }),
       {
         type,
         opening_stock,
@@ -144,7 +150,8 @@ router.put("/:id", async (req, res) => {
 // Auto-calculate inventory for today based on milk entries and sales
 router.post("/calculate/today", async (req, res) => {
   try {
-    const { tenantId } = req.user;
+    const { tenantId, id } = req.user;
+    const adminId = id;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
@@ -155,6 +162,7 @@ router.post("/calculate/today", async (req, res) => {
       {
         $match: {
           tenantId: new mongoose.Types.ObjectId(tenantId),
+          ...(adminId ? { adminId: new mongoose.Types.ObjectId(adminId) } : {}),
           createdAt: { $gte: today, $lt: tomorrow }
         }
       },
@@ -171,6 +179,7 @@ router.post("/calculate/today", async (req, res) => {
       {
         $match: {
           tenantId: new mongoose.Types.ObjectId(tenantId),
+          ...(adminId ? { adminId: new mongoose.Types.ObjectId(adminId) } : {}),
           createdAt: { $gte: today, $lt: tomorrow }
         }
       },
@@ -187,7 +196,7 @@ router.post("/calculate/today", async (req, res) => {
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = yesterday.toISOString().split('T')[0];
 
-    const yesterdayRecords = await Inventory.find({ tenantId, date: yesterdayStr });
+    const yesterdayRecords = await Inventory.find(scopedFilter(req, { date: yesterdayStr }));
 
     const inventoryRecords = [];
 
@@ -226,8 +235,8 @@ router.post("/calculate/today", async (req, res) => {
     // Insert or update inventory records
     for (const record of inventoryRecords) {
       await Inventory.findOneAndUpdate(
-        { tenantId, type: record.type, date: record.date },
-        { ...record, tenantId },
+        scopedFilter(req, { type: record.type, date: record.date }),
+        { ...record, tenantId, adminId },
         { upsert: true, new: true }
       );
     }

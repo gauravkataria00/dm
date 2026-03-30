@@ -22,8 +22,11 @@ const requireTenantAuth = (req, res, next) => {
       role: claims.role,
       tenantId: String(claims.tenantId),
       tenantCode: claims.tenantCode,
-      adminId: claims.adminId,
+      adminId: String(claims.adminId || ""),
+      id: String(claims.adminId || ""),
     };
+
+    console.log("User:", req.user.id);
 
     return next();
   } catch (error) {

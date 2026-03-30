@@ -4,10 +4,18 @@ const MilkEntry = require("../models/MilkEntry");
 const Client = require("../models/Client");
 const mongoose = require("mongoose");
 
+const scopedFilter = (req, extra = {}) => {
+  const adminId = req.user.id;
+  return {
+    adminId,
+    ...extra,
+  };
+};
+
 router.get("/", async (req, res) => {
   try {
     const { tenantId } = req.user;
-    const milkEntries = await MilkEntry.find({ tenantId }).sort({ createdAt: -1 }).lean();
+    const milkEntries = await MilkEntry.find(scopedFilter(req)).sort({ createdAt: -1 }).lean();
 
     // Gather client IDs (even if some are invalid/missing)
     const clientIds = [...new Set(milkEntries
@@ -15,7 +23,7 @@ router.get("/", async (req, res) => {
       .filter(id => id && mongoose.Types.ObjectId.isValid(id))
       .map(id => id.toString()))];
 
-    const clients = await Client.find({ tenantId, _id: { $in: clientIds } }).select('name phone').lean();
+    const clients = await Client.find(scopedFilter(req, { _id: { $in: clientIds } })).select('name phone').lean();
     const clientMap = clients.reduce((acc, client) => {
       acc[client._id.toString()] = client;
       return acc;
@@ -53,14 +61,15 @@ router.get("/", async (req, res) => {
 
 router.post("/", async (req, res) => {
   try {
-    const { tenantId } = req.user;
+    const { tenantId, id } = req.user;
+    const adminId = id;
     const { clientId, type, litres, fat, snf, rate, total, shift } = req.body;
     if (!clientId) return res.status(400).json({ error: "clientId is required" });
 
     const normalizedShift = shift === "evening" ? "evening" : "morning";
 
     // Validate that client exists before saving
-    const client = await Client.findOne({ _id: clientId, tenantId });
+    const client = await Client.findOne(scopedFilter(req, { _id: clientId }));
     if (!client) {
       console.error(`Invalid clientId: ${clientId}`);
       return res.status(400).json({ error: "Invalid client" });
@@ -73,6 +82,7 @@ router.post("/", async (req, res) => {
 
     const duplicateEntry = await MilkEntry.findOne({
       tenantId,
+      adminId,
       clientId,
       type,
       shift: normalizedShift,
@@ -85,7 +95,7 @@ router.post("/", async (req, res) => {
       });
     }
 
-    const milkEntry = new MilkEntry({ tenantId, clientId, type, litres, fat, snf, rate, total, shift: normalizedShift });
+    const milkEntry = new MilkEntry({ tenantId, adminId, clientId, type, litres, fat, snf, rate, total, shift: normalizedShift });
     await milkEntry.save();
 
     await milkEntry.populate('clientId', 'name phone');
@@ -115,7 +125,6 @@ router.post("/", async (req, res) => {
 
 router.delete("/:id", async (req, res) => {
   try {
-    const { tenantId } = req.user;
     const { id } = req.params;
     
     console.log("DELETE request received for ID:", id);
@@ -127,7 +136,7 @@ router.delete("/:id", async (req, res) => {
 
     console.log("Attempting to delete entry with ID:", id);
     
-    const deletedEntry = await MilkEntry.findOneAndDelete({ _id: id, tenantId });
+    const deletedEntry = await MilkEntry.findOneAndDelete(scopedFilter(req, { _id: id }));
     
     if (!deletedEntry) {
       console.warn("Entry not found for ID:", id);

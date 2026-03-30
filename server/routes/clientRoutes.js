@@ -2,10 +2,17 @@ const express = require("express");
 const router = express.Router();
 const Client = require("../models/Client");
 
+const scopedFilter = (req, extra = {}) => {
+  const adminId = req.user.id;
+  return {
+    adminId,
+    ...extra,
+  };
+};
+
 router.get("/", async (req, res) => {
   try {
-    const { tenantId } = req.user;
-    const clients = await Client.find({ tenantId }).sort({ _id: -1 }).lean();
+    const clients = await Client.find(scopedFilter(req)).sort({ _id: -1 }).lean();
     res.json(clients.map(client => ({
       id: client._id,
       name: client.name,
@@ -19,8 +26,7 @@ router.get("/", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
   try {
-    const { tenantId } = req.user;
-    const client = await Client.findOne({ _id: req.params.id, tenantId }).lean();
+    const client = await Client.findOne(scopedFilter(req, { _id: req.params.id })).lean();
     if (!client) return res.status(404).json({ error: "Not found" });
     res.json({
       id: client._id,
@@ -35,9 +41,10 @@ router.get("/:id", async (req, res) => {
 
 router.post("/", async (req, res) => {
   try {
-    const { tenantId } = req.user;
+    const { tenantId, id } = req.user;
+    const adminId = id;
     const { name, phone } = req.body;
-    const client = new Client({ tenantId, name, phone });
+    const client = new Client({ tenantId, adminId, name, phone });
     await client.save();
     res.json({
       id: client._id,
@@ -52,10 +59,9 @@ router.post("/", async (req, res) => {
 
 router.put("/:id", async (req, res) => {
   try {
-    const { tenantId } = req.user;
     const { name, phone } = req.body;
     const client = await Client.findOneAndUpdate(
-      { _id: req.params.id, tenantId },
+      scopedFilter(req, { _id: req.params.id }),
       { name, phone },
       { new: true }
     );
@@ -73,8 +79,7 @@ router.put("/:id", async (req, res) => {
 
 router.delete("/:id", async (req, res) => {
   try {
-    const { tenantId } = req.user;
-    await Client.findOneAndDelete({ _id: req.params.id, tenantId });
+    await Client.findOneAndDelete(scopedFilter(req, { _id: req.params.id }));
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -5,11 +5,18 @@ const MilkEntry = require("../models/MilkEntry");
 const Client = require("../models/Client");
 const mongoose = require("mongoose");
 
+const scopedFilter = (req, extra = {}) => {
+  const adminId = req.user.id;
+  return {
+    adminId,
+    ...extra,
+  };
+};
+
 // Get all settlements with client names
 router.get("/", async (req, res) => {
   try {
-    const { tenantId } = req.user;
-    let settlements = await Settlement.find({ tenantId })
+    let settlements = await Settlement.find(scopedFilter(req))
       .populate('clientId', 'name phone')
       .sort({ createdAt: -1 })
       .lean();
@@ -44,8 +51,7 @@ router.get("/", async (req, res) => {
 // Get settlements for a specific client
 router.get("/client/:clientId", async (req, res) => {
   try {
-    const { tenantId } = req.user;
-    let settlements = await Settlement.find({ tenantId, clientId: req.params.clientId })
+    let settlements = await Settlement.find(scopedFilter(req, { clientId: req.params.clientId }))
       .populate('clientId', 'name phone')
       .sort({ createdAt: -1 })
       .lean();
@@ -80,7 +86,8 @@ router.get("/client/:clientId", async (req, res) => {
 // Create a new settlement for a client (calculate for a period)
 router.post("/", async (req, res) => {
   try {
-    const { tenantId } = req.user;
+    const { tenantId, id } = req.user;
+    const adminId = id;
     const { clientId, startDate, endDate } = req.body;
 
     if (!clientId || !startDate || !endDate) {
@@ -88,7 +95,7 @@ router.post("/", async (req, res) => {
     }
 
     // Validate that client exists before saving
-    const client = await Client.findOne({ _id: clientId, tenantId });
+    const client = await Client.findOne(scopedFilter(req, { _id: clientId }));
     if (!client) {
       console.error(`Invalid clientId: ${clientId}`);
       return res.status(400).json({ error: "Invalid client" });
@@ -99,6 +106,7 @@ router.post("/", async (req, res) => {
       {
         $match: {
           tenantId: new mongoose.Types.ObjectId(tenantId),
+          ...(adminId ? { adminId: new mongoose.Types.ObjectId(adminId) } : {}),
           clientId: new mongoose.Types.ObjectId(clientId),
           createdAt: {
             $gte: new Date(startDate),
@@ -120,6 +128,7 @@ router.post("/", async (req, res) => {
 
     const settlement = new Settlement({
       tenantId,
+      adminId,
       clientId,
       startDate,
       endDate,
@@ -155,7 +164,6 @@ router.post("/", async (req, res) => {
 // Update settlement status
 router.put("/:id", async (req, res) => {
   try {
-    const { tenantId } = req.user;
     const { status } = req.body;
 
     if (!status) {
@@ -163,7 +171,7 @@ router.put("/:id", async (req, res) => {
     }
 
     const settlement = await Settlement.findOneAndUpdate(
-      { _id: req.params.id, tenantId },
+      scopedFilter(req, { _id: req.params.id }),
       { status },
       { new: true }
     );

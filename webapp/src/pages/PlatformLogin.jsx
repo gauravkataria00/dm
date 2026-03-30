@@ -39,9 +39,23 @@ export default function PlatformLogin() {
         return;
       }
 
-      localStorage.setItem("platformToken", payload.token);
+      const token = payload.token;
+      localStorage.setItem("token", token);
       localStorage.setItem("platformAdminName", payload?.admin?.name || "Owner");
-      console.log("TOKEN:", localStorage.getItem("platformToken"));
+
+      const verifyRes = await fetch(`${API_BASE_URL}/api/platform/tenants`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!verifyRes.ok) {
+        const verifyPayload = await verifyRes.json().catch(() => ({}));
+        localStorage.removeItem("token");
+        setError(verifyPayload?.error || "Token validation failed after login");
+        return;
+      }
+
       window.location.href = "/#/platform/console";
     } catch (err) {
       console.error(err);

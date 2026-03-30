@@ -95,7 +95,6 @@ export default function Ledger() {
 
         setEntries(Array.isArray(entriesData) ? entriesData : []);
         setClients(Array.isArray(clientsData) ? clientsData : []);
-        console.log("Entries:", entries);
       } catch (err) {
         console.error("LOAD ERROR:", err);
         push("Failed to load ledger", "error");

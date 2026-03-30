@@ -6,6 +6,10 @@ const consumerSchema = new mongoose.Schema({
     ref: "Tenant",
     required: true,
   },
+  adminId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "TenantAdmin",
+  },
   name: {
     type: String,
     required: true
@@ -27,5 +31,6 @@ const consumerSchema = new mongoose.Schema({
 });
 
 consumerSchema.index({ tenantId: 1, createdAt: -1 });
+consumerSchema.index({ tenantId: 1, adminId: 1, createdAt: -1 });
 
 module.exports = mongoose.model("Consumer", consumerSchema);

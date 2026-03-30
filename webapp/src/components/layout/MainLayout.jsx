@@ -86,8 +86,7 @@ export default function MainLayout({ children }) {
 
           <button
             onClick={() => {
-              localStorage.removeItem("adminToken");
-              localStorage.removeItem("tenantToken");
+              localStorage.removeItem("token");
               localStorage.removeItem("tenantAdminName");
               localStorage.removeItem("tenantName");
               window.location.href = "/login";

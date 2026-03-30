@@ -1,11 +1,7 @@
-const defaultApiBaseUrl = import.meta.env.PROD
-  ? "https://dairy-backend-pw3n.onrender.com"
-  : "http://localhost:5000";
+const BASE_URL = import.meta.env.VITE_API_URL || "https://dairy-backend-pw3n.onrender.com";
+const defaultApiBaseUrl = BASE_URL;
 
-const rawApiBaseUrl =
-  import.meta.env.VITE_API_URL ||
-  import.meta.env.VITE_API_BASE_URL ||
-  defaultApiBaseUrl;
+const rawApiBaseUrl = BASE_URL;
 
 const normalizeApiBaseUrl = (value) => {
   const trimmed = String(value || "").trim();
@@ -31,9 +27,14 @@ const normalizeApiBaseUrl = (value) => {
 
 export const API_BASE_URL = normalizeApiBaseUrl(rawApiBaseUrl);
 
-console.log("API URL:", API_BASE_URL);
+if (import.meta.env.DEV) {
+  console.log("API BASE URL:", BASE_URL);
+}
 
 const fallbackRawBaseUrl =
   import.meta.env.VITE_API_FALLBACK_URL || "https://dairy-backend-pw3n.onrender.com";
 
 export const API_FALLBACK_BASE_URL = normalizeApiBaseUrl(fallbackRawBaseUrl);
+
+export const DEFAULT_REPORT_WHATSAPP_PHONE =
+  String(import.meta.env.VITE_REPORT_WHATSAPP_PHONE || "").replace(/\D/g, "");

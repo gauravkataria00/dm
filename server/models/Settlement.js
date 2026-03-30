@@ -6,6 +6,10 @@ const settlementSchema = new mongoose.Schema({
     ref: "Tenant",
     required: true,
   },
+  adminId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "TenantAdmin",
+  },
   clientId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Client',
@@ -41,5 +45,6 @@ settlementSchema.index({ createdAt: -1 });
 settlementSchema.index({ clientId: 1, status: 1, createdAt: -1 });
 settlementSchema.index({ clientId: 1, startDate: -1, endDate: -1 });
 settlementSchema.index({ tenantId: 1, createdAt: -1 });
+settlementSchema.index({ tenantId: 1, adminId: 1, createdAt: -1 });
 
 module.exports = mongoose.model("Settlement", settlementSchema);

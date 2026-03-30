@@ -4,11 +4,18 @@ const ConsumerPayment = require("../models/ConsumerPayment");
 const Consumer = require("../models/Consumer");
 const mongoose = require("mongoose");
 
+const scopedFilter = (req, extra = {}) => {
+  const adminId = req.user.id;
+  return {
+    adminId,
+    ...extra,
+  };
+};
+
 // Get all consumer payments
 router.get("/", async (req, res) => {
   try {
-    const { tenantId } = req.user;
-    let payments = await ConsumerPayment.find({ tenantId })
+    let payments = await ConsumerPayment.find(scopedFilter(req))
       .populate('consumerId', 'name phone')
       .sort({ createdAt: -1 });
     
@@ -41,8 +48,7 @@ router.get("/", async (req, res) => {
 // Get payments for a specific consumer
 router.get("/consumer/:consumerId", async (req, res) => {
   try {
-    const { tenantId } = req.user;
-    let payments = await ConsumerPayment.find({ tenantId, consumerId: req.params.consumerId })
+    let payments = await ConsumerPayment.find(scopedFilter(req, { consumerId: req.params.consumerId }))
       .populate('consumerId', 'name phone')
       .sort({ createdAt: -1 });
     
@@ -75,7 +81,8 @@ router.get("/consumer/:consumerId", async (req, res) => {
 // Create new consumer payment
 router.post("/", async (req, res) => {
   try {
-    const { tenantId } = req.user;
+    const { tenantId, id } = req.user;
+    const adminId = id;
     const { consumer_id, amount, payment_date, payment_method, notes } = req.body;
 
     if (!consumer_id || !amount || !payment_date) {
@@ -83,7 +90,7 @@ router.post("/", async (req, res) => {
     }
 
     // Validate that consumer exists before saving
-    const consumer = await Consumer.findOne({ _id: consumer_id, tenantId });
+    const consumer = await Consumer.findOne(scopedFilter(req, { _id: consumer_id }));
     if (!consumer) {
       console.error(`Invalid consumer_id: ${consumer_id}`);
       return res.status(400).json({ error: "Invalid consumer" });
@@ -91,6 +98,7 @@ router.post("/", async (req, res) => {
 
     const payment = new ConsumerPayment({
       tenantId,
+      adminId,
       consumerId: consumer_id,
       amount,
       date: payment_date,
@@ -124,11 +132,13 @@ router.post("/", async (req, res) => {
 // Get payment summary for a consumer
 router.get("/summary/:consumerId", async (req, res) => {
   try {
-    const { tenantId } = req.user;
+    const { tenantId, id } = req.user;
+    const adminId = id;
     const summary = await ConsumerPayment.aggregate([
       {
         $match: {
           tenantId: new mongoose.Types.ObjectId(tenantId),
+          ...(adminId ? { adminId: new mongoose.Types.ObjectId(adminId) } : {}),
           consumerId: new mongoose.Types.ObjectId(req.params.consumerId),
         }
       },

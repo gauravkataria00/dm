@@ -2,21 +2,68 @@ import { API_BASE_URL, API_FALLBACK_BASE_URL } from "./config";
 
 const API_BASE_URL_WITH_API = `${API_BASE_URL}/api`;
 const nativeFetch = globalThis.fetch.bind(globalThis);
+const DEV_MODE = import.meta.env.DEV;
+const GET_CACHE_TTL_MS = 30000;
+const getRequestCache = new Map();
 
-const getAuthToken = () =>
-  localStorage.getItem("tenantToken") ||
-  localStorage.getItem("adminToken") ||
-  localStorage.getItem("platformToken") ||
-  "";
+const logError = (...args) => {
+  if (DEV_MODE) {
+    console.error(...args);
+  }
+};
+
+const logWarn = (...args) => {
+  if (DEV_MODE) {
+    console.warn(...args);
+  }
+};
+
+const clearGetCache = () => {
+  getRequestCache.clear();
+};
+
+const getCacheEntry = (key) => {
+  const cached = getRequestCache.get(key);
+  if (!cached) return null;
+  if (cached.expiresAt <= Date.now()) {
+    getRequestCache.delete(key);
+    return null;
+  }
+  return cached.value;
+};
+
+const setCacheEntry = (key, value, ttlMs = GET_CACHE_TTL_MS) => {
+  getRequestCache.set(key, {
+    value,
+    expiresAt: Date.now() + ttlMs,
+  });
+};
+
+const getAuthToken = () => localStorage.getItem("token") || "";
 
 const fetch = (input, init = {}) => {
+  const method = String(init.method || "GET").toUpperCase();
+  if (method !== "GET") {
+    clearGetCache();
+  }
+
   const token = getAuthToken();
+
+  if (!token) {
+    const message = "Authentication token missing. Please login again.";
+    logError(message);
+    if (typeof window !== "undefined") {
+      window.alert(message);
+      if (!window.location.hash.includes("/login")) {
+        window.location.href = "/#/login";
+      }
+    }
+    return Promise.reject(new Error(message));
+  }
+
   const incomingHeaders = init.headers || {};
   const headers = new Headers(incomingHeaders);
-
-  if (token && !headers.has("Authorization")) {
-    headers.set("Authorization", `Bearer ${token}`);
-  }
+  headers.set("Authorization", `Bearer ${token}`);
 
   return nativeFetch(input, {
     ...init,
@@ -24,33 +71,68 @@ const fetch = (input, init = {}) => {
   });
 };
 
+const parseErrorMessage = async (response, fallbackMessage) => {
+  const contentType = response.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    const payload = await response.json().catch(() => ({}));
+    return payload?.error || payload?.message || `${fallbackMessage} (${response.status})`;
+  }
+
+  const text = await response.text().catch(() => "");
+  return text || `${fallbackMessage} (${response.status})`;
+};
+
+const postJson = async (url, body, fallbackMessage) => {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response, fallbackMessage));
+  }
+
+  return response.json();
+};
+
+const getJsonWithCache = async (url, fallbackMessage, options = {}) => {
+  const { ttlMs = GET_CACHE_TTL_MS, asArray = false } = options;
+  const cacheKey = `GET:${url}`;
+  const cached = getCacheEntry(cacheKey);
+  if (cached !== null && cached !== undefined) {
+    return cached;
+  }
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response, fallbackMessage));
+  }
+
+  const data = await response.json();
+  const resolved = asArray
+    ? Array.isArray(data)
+      ? data
+      : Array.isArray(data?.data)
+        ? data.data
+        : []
+    : data;
+
+  if (asArray && !Array.isArray(data) && !Array.isArray(data?.data)) {
+    logWarn("Unexpected response format for", url, data);
+  }
+
+  setCacheEntry(cacheKey, resolved, ttlMs);
+  return resolved;
+};
+
 // Get all clients
 export const getClients = async () => {
   try {
-    const url = `${API_BASE_URL_WITH_API}/clients`;
-    console.log("Fetching clients from:", url);
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      console.error("Response not ok. Status:", response.status, "StatusText:", response.statusText);
-      throw new Error(`Failed to fetch clients: ${response.status} ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    console.log("Clients API response:", data);
-    
-    // Ensure we always return an array
-    if (Array.isArray(data)) {
-      return data;
-    } else if (data && Array.isArray(data.data)) {
-      return data.data;
-    } else {
-      console.warn("Unexpected response format. Data:", data);
-      return [];
-    }
+    return await getJsonWithCache(`${API_BASE_URL_WITH_API}/clients`, "Failed to fetch clients", { asArray: true });
   } catch (error) {
-    console.error("Error fetching clients:", error);
-    return []; // Return empty array instead of throwing
+    logError("Error fetching clients:", error);
+    throw error;
   }
 };
 
@@ -69,15 +151,9 @@ export const getClientById = async (id) => {
 // Create new client
 export const createClient = async (clientData) => {
   try {
-    const response = await fetch(`${API_BASE_URL_WITH_API}/clients`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(clientData),
-    });
-    if (!response.ok) throw new Error("Failed to create client");
-    return await response.json();
+    return await postJson(`${API_BASE_URL_WITH_API}/clients`, clientData, "Failed to create client");
   } catch (error) {
-    console.error("Error creating client:", error);
+    console.error("Create error:", error);
     throw error;
   }
 };
@@ -115,49 +191,18 @@ export const deleteClient = async (id) => {
 // Milk entries
 export const getMilkEntries = async () => {
   try {
-    const url = `${API_BASE_URL_WITH_API}/milk`;
-    console.log("Fetching milk entries from:", url);
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      console.error("Response not ok. Status:", response.status, "StatusText:", response.statusText);
-      throw new Error(`Failed to fetch milk entries: ${response.status} ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    console.log("Milk entries API response:", data);
-    
-    // Ensure we always return an array
-    if (Array.isArray(data)) {
-      return data;
-    } else if (data && Array.isArray(data.data)) {
-      return data.data;
-    } else {
-      console.warn("Unexpected response format. Data:", data);
-      return [];
-    }
+    return await getJsonWithCache(`${API_BASE_URL_WITH_API}/milk`, "Failed to fetch milk entries", { asArray: true });
   } catch (error) {
-    console.error("Error fetching milk entries:", error);
-    return []; // Return empty array instead of throwing
+    logError("Error fetching milk entries:", error);
+    throw error;
   }
 };
 
 export const createMilkEntry = async (entryData) => {
   try {
-    const response = await fetch(`${API_BASE_URL_WITH_API}/milk`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(entryData),
-    });
-    if (!response.ok) {
-      const contentType = response.headers.get("content-type") || "";
-      const isJson = contentType.includes("application/json");
-      const payload = isJson ? await response.json() : null;
-      throw new Error(payload?.error || payload?.message || "Failed to create milk entry");
-    }
-    return await response.json();
+    return await postJson(`${API_BASE_URL_WITH_API}/milk`, entryData, "Failed to create milk entry");
   } catch (error) {
-    console.error("Error creating milk entry:", error);
+    console.error("Create error:", error);
     throw error;
   }
 };
@@ -205,11 +250,9 @@ export const deleteMilkEntry = async (entryId) => {
 // Settlements
 export const getSettlements = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL_WITH_API}/settlements`);
-    if (!response.ok) throw new Error("Failed to fetch settlements");
-    return await response.json();
+    return await getJsonWithCache(`${API_BASE_URL_WITH_API}/settlements`, "Failed to fetch settlements", { asArray: true });
   } catch (error) {
-    console.error("Error fetching settlements:", error);
+    logError("Error fetching settlements:", error);
     throw error;
   }
 };
@@ -227,15 +270,9 @@ export const getClientSettlements = async (clientId) => {
 
 export const createSettlement = async (settlementData) => {
   try {
-    const response = await fetch(`${API_BASE_URL_WITH_API}/settlements`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(settlementData),
-    });
-    if (!response.ok) throw new Error("Failed to create settlement");
-    return await response.json();
+    return await postJson(`${API_BASE_URL_WITH_API}/settlements`, settlementData, "Failed to create settlement");
   } catch (error) {
-    console.error("Error creating settlement:", error);
+    console.error("Create error:", error);
     throw error;
   }
 };
@@ -258,11 +295,9 @@ export const updateSettlementStatus = async (id, status) => {
 // Payments
 export const getPayments = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL_WITH_API}/payments`);
-    if (!response.ok) throw new Error("Failed to fetch payments");
-    return await response.json();
+    return await getJsonWithCache(`${API_BASE_URL_WITH_API}/payments`, "Failed to fetch payments", { asArray: true });
   } catch (error) {
-    console.error("Error fetching payments:", error);
+    logError("Error fetching payments:", error);
     throw error;
   }
 };
@@ -280,15 +315,9 @@ export const getClientPayments = async (clientId) => {
 
 export const createPayment = async (paymentData) => {
   try {
-    const response = await fetch(`${API_BASE_URL_WITH_API}/payments`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(paymentData),
-    });
-    if (!response.ok) throw new Error("Failed to create payment");
-    return await response.json();
+    return await postJson(`${API_BASE_URL_WITH_API}/payments`, paymentData, "Failed to create payment");
   } catch (error) {
-    console.error("Error creating payment:", error);
+    console.error("Create error:", error);
     throw error;
   }
 };
@@ -307,30 +336,10 @@ export const getClientPaymentSummary = async (clientId) => {
 // Advances
 export const getAdvances = async () => {
   try {
-    const url = `${API_BASE_URL_WITH_API}/advances`;
-    console.log("Fetching advances from:", url);
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      console.error("Response not ok. Status:", response.status, "StatusText:", response.statusText);
-      throw new Error(`Failed to fetch advances: ${response.status} ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    console.log("Advances API response:", data);
-    
-    // Ensure we always return an array
-    if (Array.isArray(data)) {
-      return data;
-    } else if (data && Array.isArray(data.data)) {
-      return data.data;
-    } else {
-      console.warn("Unexpected response format. Data:", data);
-      return [];
-    }
+    return await getJsonWithCache(`${API_BASE_URL_WITH_API}/advances`, "Failed to fetch advances", { asArray: true });
   } catch (error) {
-    console.error("Error fetching advances:", error);
-    return []; // Return empty array instead of throwing
+    logError("Error fetching advances:", error);
+    throw error;
   }
 };
 
@@ -347,15 +356,9 @@ export const getClientAdvances = async (clientId) => {
 
 export const createAdvance = async (advanceData) => {
   try {
-    const response = await fetch(`${API_BASE_URL_WITH_API}/advances`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(advanceData),
-    });
-    if (!response.ok) throw new Error("Failed to create advance");
-    return await response.json();
+    return await postJson(`${API_BASE_URL_WITH_API}/advances`, advanceData, "Failed to create advance");
   } catch (error) {
-    console.error("Error creating advance:", error);
+    console.error("Create error:", error);
     throw error;
   }
 };
@@ -400,15 +403,9 @@ export const getConsumerById = async (id) => {
 
 export const createConsumer = async (consumerData) => {
   try {
-    const response = await fetch(`${API_BASE_URL_WITH_API}/consumers`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(consumerData),
-    });
-    if (!response.ok) throw new Error("Failed to create consumer");
-    return await response.json();
+    return await postJson(`${API_BASE_URL_WITH_API}/consumers`, consumerData, "Failed to create consumer");
   } catch (error) {
-    console.error("Error creating consumer:", error);
+    console.error("Create error:", error);
     throw error;
   }
 };
@@ -455,11 +452,9 @@ export const getConsumerSummary = async (id) => {
 // Consumer Sales
 export const getConsumerSales = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL_WITH_API}/consumer-sales`);
-    if (!response.ok) throw new Error("Failed to fetch consumer sales");
-    return await response.json();
+    return await getJsonWithCache(`${API_BASE_URL_WITH_API}/consumer-sales`, "Failed to fetch consumer sales", { asArray: true });
   } catch (error) {
-    console.error("Error fetching consumer sales:", error);
+    logError("Error fetching consumer sales:", error);
     throw error;
   }
 };
@@ -488,15 +483,9 @@ export const getTodayConsumerSales = async () => {
 
 export const createConsumerSale = async (saleData) => {
   try {
-    const response = await fetch(`${API_BASE_URL_WITH_API}/consumer-sales`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(saleData),
-    });
-    if (!response.ok) throw new Error("Failed to create consumer sale");
-    return await response.json();
+    return await postJson(`${API_BASE_URL_WITH_API}/consumer-sales`, saleData, "Failed to create consumer sale");
   } catch (error) {
-    console.error("Error creating consumer sale:", error);
+    console.error("Create error:", error);
     throw error;
   }
 };
@@ -552,15 +541,9 @@ export const getConsumerPaymentsByConsumer = async (consumerId) => {
 
 export const createConsumerPayment = async (paymentData) => {
   try {
-    const response = await fetch(`${API_BASE_URL_WITH_API}/consumer-payments`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(paymentData),
-    });
-    if (!response.ok) throw new Error("Failed to create consumer payment");
-    return await response.json();
+    return await postJson(`${API_BASE_URL_WITH_API}/consumer-payments`, paymentData, "Failed to create consumer payment");
   } catch (error) {
-    console.error("Error creating consumer payment:", error);
+    console.error("Create error:", error);
     throw error;
   }
 };
@@ -579,37 +562,27 @@ export const getConsumerPaymentSummary = async (consumerId) => {
 // Inventory
 export const getInventory = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL_WITH_API}/inventory`);
-    if (!response.ok) throw new Error("Failed to fetch inventory");
-    return await response.json();
+    return await getJsonWithCache(`${API_BASE_URL_WITH_API}/inventory`, "Failed to fetch inventory", { asArray: true });
   } catch (error) {
-    console.error("Error fetching inventory:", error);
+    logError("Error fetching inventory:", error);
     throw error;
   }
 };
 
 export const getTodayInventory = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL_WITH_API}/inventory/today`);
-    if (!response.ok) throw new Error("Failed to fetch today's inventory");
-    return await response.json();
+    return await getJsonWithCache(`${API_BASE_URL_WITH_API}/inventory/today`, "Failed to fetch today's inventory");
   } catch (error) {
-    console.error("Error fetching today's inventory:", error);
+    logError("Error fetching today's inventory:", error);
     throw error;
   }
 };
 
 export const createInventoryRecord = async (inventoryData) => {
   try {
-    const response = await fetch(`${API_BASE_URL_WITH_API}/inventory`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(inventoryData),
-    });
-    if (!response.ok) throw new Error("Failed to create inventory record");
-    return await response.json();
+    return await postJson(`${API_BASE_URL_WITH_API}/inventory`, inventoryData, "Failed to create inventory record");
   } catch (error) {
-    console.error("Error creating inventory record:", error);
+    console.error("Create error:", error);
     throw error;
   }
 };

@@ -6,6 +6,10 @@ const paymentSchema = new mongoose.Schema({
     ref: "Tenant",
     required: true,
   },
+  adminId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "TenantAdmin",
+  },
   clientId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Client',
@@ -38,5 +42,6 @@ paymentSchema.index({ createdAt: -1 });
 paymentSchema.index({ clientId: 1, createdAt: -1 });
 paymentSchema.index({ clientId: 1, date: -1 });
 paymentSchema.index({ tenantId: 1, createdAt: -1 });
+paymentSchema.index({ tenantId: 1, adminId: 1, createdAt: -1 });
 
 module.exports = mongoose.model("Payment", paymentSchema);

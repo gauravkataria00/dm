@@ -20,27 +20,16 @@ export default function Advances() {
 
   const loadData = async () => {
     try {
-      console.log("Starting data load from:", import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || "http://localhost:5000");
-      
       const [advancesData, clientsData] = await Promise.all([
         getAdvances(),
         getClients()
       ]);
-      
-      console.log("Raw advances data:", advancesData);
-      console.log("Raw clients data:", clientsData);
-      console.log("Clients is array?", Array.isArray(clientsData));
-      console.log("Clients length:", clientsData?.length);
       
       const processedAdvances = Array.isArray(advancesData) ? advancesData : [];
       const processedClients = Array.isArray(clientsData) ? clientsData : [];
       
       setAdvances(processedAdvances);
       setClients(processedClients);
-      
-      console.log("State update - Advances loaded:", processedAdvances.length);
-      console.log("State update - Clients loaded:", processedClients.length);
-      console.log("Clients data structure:", processedClients.map(c => ({ id: c.id, _id: c._id, name: c.name })));
     } catch (error) {
       console.error("Error loading data:", error);
       setAdvances([]);

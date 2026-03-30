@@ -6,6 +6,10 @@ const milkEntrySchema = new mongoose.Schema({
     ref: "Tenant",
     required: true,
   },
+  adminId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "TenantAdmin",
+  },
   clientId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Client',
@@ -50,5 +54,6 @@ milkEntrySchema.index({ createdAt: -1 });
 milkEntrySchema.index({ clientId: 1, createdAt: -1 });
 milkEntrySchema.index({ type: 1, createdAt: -1 });
 milkEntrySchema.index({ tenantId: 1, createdAt: -1 });
+milkEntrySchema.index({ tenantId: 1, adminId: 1, createdAt: -1 });
 
 module.exports = mongoose.model("MilkEntry", milkEntrySchema);

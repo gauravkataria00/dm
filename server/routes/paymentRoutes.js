@@ -7,11 +7,18 @@ const Advance = require("../models/Advance");
 const Settlement = require("../models/Settlement");
 const Client = require("../models/Client");
 
+const scopedFilter = (req, extra = {}) => {
+  const adminId = req.user.id;
+  return {
+    adminId,
+    ...extra,
+  };
+};
+
 // Get all payments with client and settlement info
 router.get("/", async (req, res) => {
   try {
-    const { tenantId } = req.user;
-    let payments = await Payment.find({ tenantId })
+    let payments = await Payment.find(scopedFilter(req))
       .populate('clientId', 'name phone')
       .populate('settlementId', 'startDate endDate')
       .sort({ createdAt: -1 });
@@ -48,8 +55,7 @@ router.get("/", async (req, res) => {
 // Get payments for a specific client
 router.get("/client/:clientId", async (req, res) => {
   try {
-    const { tenantId } = req.user;
-    let payments = await Payment.find({ tenantId, clientId: req.params.clientId })
+    let payments = await Payment.find(scopedFilter(req, { clientId: req.params.clientId }))
       .populate('clientId', 'name phone')
       .populate('settlementId', 'startDate endDate')
       .sort({ createdAt: -1 });
@@ -86,7 +92,8 @@ router.get("/client/:clientId", async (req, res) => {
 // Add a new payment
 router.post("/", async (req, res) => {
   try {
-    const { tenantId } = req.user;
+    const { tenantId, id } = req.user;
+    const adminId = id;
     const { clientId, settlementId, amount, type, date, notes } = req.body;
 
     if (!clientId || !amount || !type || !date) {
@@ -94,20 +101,20 @@ router.post("/", async (req, res) => {
     }
 
     // Validate that client exists before saving
-    const client = await Client.findOne({ _id: clientId, tenantId });
+    const client = await Client.findOne(scopedFilter(req, { _id: clientId }));
     if (!client) {
       console.error(`Invalid clientId: ${clientId}`);
       return res.status(400).json({ error: "Invalid client" });
     }
 
     if (settlementId) {
-      const settlement = await Settlement.findOne({ _id: settlementId, tenantId }).lean();
+      const settlement = await Settlement.findOne(scopedFilter(req, { _id: settlementId })).lean();
       if (!settlement) {
         return res.status(400).json({ error: "Invalid settlement" });
       }
     }
 
-    const payment = new Payment({ tenantId, clientId, settlementId, amount, type, date, notes });
+    const payment = new Payment({ tenantId, adminId, clientId, settlementId, amount, type, date, notes });
     await payment.save();
 
     await payment.populate('clientId', 'name phone');
@@ -139,30 +146,33 @@ router.post("/", async (req, res) => {
 // Get client payment summary (total owed, paid, advances, etc.)
 router.get("/summary/:clientId", async (req, res) => {
   try {
-    const { tenantId } = req.user;
+    const { tenantId, id } = req.user;
+    const adminId = id;
     const clientId = req.params.clientId;
     const clientObjectId = new mongoose.Types.ObjectId(clientId);
     const tenantObjectId = new mongoose.Types.ObjectId(tenantId);
+    const adminObjectId = adminId ? new mongoose.Types.ObjectId(adminId) : null;
+    const ownershipMatch = adminObjectId ? { adminId: adminObjectId } : {};
 
     const [totalEarned, totalPaid, advancesGiven, advancesRepaid, pendingSettlements] = await Promise.all([
       MilkEntry.aggregate([
-        { $match: { tenantId: tenantObjectId, clientId: clientObjectId } },
+        { $match: { tenantId: tenantObjectId, clientId: clientObjectId, ...ownershipMatch } },
         { $group: { _id: null, amount: { $sum: "$total" } } }
       ]),
       Payment.aggregate([
-        { $match: { tenantId: tenantObjectId, clientId: clientObjectId, type: { $in: ['settlement_payment', 'advance_repaid'] } } },
+        { $match: { tenantId: tenantObjectId, clientId: clientObjectId, type: { $in: ['settlement_payment', 'advance_repaid'] }, ...ownershipMatch } },
         { $group: { _id: null, amount: { $sum: "$amount" } } }
       ]),
       Advance.aggregate([
-        { $match: { tenantId: tenantObjectId, clientId: clientObjectId, status: 'active' } },
+        { $match: { tenantId: tenantObjectId, clientId: clientObjectId, status: 'active', ...ownershipMatch } },
         { $group: { _id: null, amount: { $sum: "$amount" } } }
       ]),
       Payment.aggregate([
-        { $match: { tenantId: tenantObjectId, clientId: clientObjectId, type: 'advance_repaid' } },
+        { $match: { tenantId: tenantObjectId, clientId: clientObjectId, type: 'advance_repaid', ...ownershipMatch } },
         { $group: { _id: null, amount: { $sum: "$amount" } } }
       ]),
       Settlement.aggregate([
-        { $match: { tenantId: tenantObjectId, clientId: clientObjectId, status: 'pending' } },
+        { $match: { tenantId: tenantObjectId, clientId: clientObjectId, status: 'pending', ...ownershipMatch } },
         { $group: { _id: null, amount: { $sum: "$totalAmount" } } }
       ])
     ]);

@@ -4,11 +4,18 @@ const ConsumerSale = require("../models/ConsumerSale");
 const Consumer = require("../models/Consumer");
 const mongoose = require("mongoose");
 
+const scopedFilter = (req, extra = {}) => {
+  const adminId = req.user.id;
+  return {
+    adminId,
+    ...extra,
+  };
+};
+
 // Get all consumer sales
 router.get("/", async (req, res) => {
   try {
-    const { tenantId } = req.user;
-    let sales = await ConsumerSale.find({ tenantId })
+    let sales = await ConsumerSale.find(scopedFilter(req))
       .populate('consumerId', 'name phone')
       .sort({ createdAt: -1 });
     
@@ -43,8 +50,7 @@ router.get("/", async (req, res) => {
 // Get sales for a specific consumer
 router.get("/consumer/:consumerId", async (req, res) => {
   try {
-    const { tenantId } = req.user;
-    let sales = await ConsumerSale.find({ tenantId, consumerId: req.params.consumerId })
+    let sales = await ConsumerSale.find(scopedFilter(req, { consumerId: req.params.consumerId }))
       .populate('consumerId', 'name phone')
       .sort({ createdAt: -1 });
     
@@ -79,16 +85,14 @@ router.get("/consumer/:consumerId", async (req, res) => {
 // Get today's sales
 router.get("/today", async (req, res) => {
   try {
-    const { tenantId } = req.user;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    let sales = await ConsumerSale.find({
-      tenantId,
+    let sales = await ConsumerSale.find(scopedFilter(req, {
       createdAt: { $gte: today, $lt: tomorrow }
-    })
+    }))
       .populate('consumerId', 'name phone')
       .sort({ createdAt: -1 });
 
@@ -123,7 +127,8 @@ router.get("/today", async (req, res) => {
 // Create new consumer sale
 router.post("/", async (req, res) => {
   try {
-    const { tenantId } = req.user;
+    const { tenantId, id } = req.user;
+    const adminId = id;
     const { consumer_id, quantity, price_per_liter, total_amount, payment_status, sale_date } = req.body;
 
     if (!consumer_id || !quantity || !price_per_liter || !total_amount) {
@@ -131,7 +136,7 @@ router.post("/", async (req, res) => {
     }
 
     // Validate that consumer exists before saving
-    const consumer = await Consumer.findOne({ _id: consumer_id, tenantId });
+    const consumer = await Consumer.findOne(scopedFilter(req, { _id: consumer_id }));
     if (!consumer) {
       console.error(`Invalid consumer_id: ${consumer_id}`);
       return res.status(400).json({ error: "Invalid consumer" });
@@ -139,6 +144,7 @@ router.post("/", async (req, res) => {
 
     const sale = new ConsumerSale({
       tenantId,
+      adminId,
       consumerId: consumer_id,
       type: 'milk',
       litres: quantity,
@@ -176,7 +182,6 @@ router.post("/", async (req, res) => {
 // Update sale payment status
 router.put("/:id/status", async (req, res) => {
   try {
-    const { tenantId } = req.user;
     const { payment_status } = req.body;
 
     if (!payment_status) {
@@ -184,7 +189,7 @@ router.put("/:id/status", async (req, res) => {
     }
 
     const sale = await ConsumerSale.findOneAndUpdate(
-      { _id: req.params.id, tenantId },
+      scopedFilter(req, { _id: req.params.id }),
       { payment_status },
       { new: true }
     );
@@ -203,7 +208,8 @@ router.put("/:id/status", async (req, res) => {
 // Get sales summary for a date range
 router.get("/summary/range", async (req, res) => {
   try {
-    const { tenantId } = req.user;
+    const { tenantId, id } = req.user;
+    const adminId = id;
     const { startDate, endDate } = req.query;
 
     if (!startDate || !endDate) {
@@ -214,6 +220,7 @@ router.get("/summary/range", async (req, res) => {
       {
         $match: {
           tenantId: new mongoose.Types.ObjectId(tenantId),
+          ...(adminId ? { adminId: new mongoose.Types.ObjectId(adminId) } : {}),
           createdAt: {
             $gte: new Date(startDate),
             $lte: new Date(endDate)

@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import MainLayout from "../components/layout/MainLayout";
 import { getClients, createClient, deleteClient } from "../services/api";
 import { useToast } from "../context/ToastContext";
+import LoadingState from "../components/common/LoadingState";
 
 export default function Clients() {
   const [clients, setClients] = useState([]);
@@ -14,8 +15,11 @@ export default function Clients() {
   const pageSize = 10;
   const [formData, setFormData] = useState({ name: "", phone: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const hasLoadedRef = useRef(false);
 
   useEffect(() => {
+    if (hasLoadedRef.current) return;
+    hasLoadedRef.current = true;
     loadClients();
   }, []);
 
@@ -25,8 +29,8 @@ export default function Clients() {
       const data = await getClients();
       setClients(data);
       setError("");
-    } catch {
-      setError("Failed to load clients");
+    } catch (error) {
+      setError(error?.message || "Failed to load clients");
     } finally {
       setLoading(false);
     }
@@ -52,8 +56,8 @@ export default function Clients() {
       setError("");
       push("Client added successfully", "success");
       setTimeout(() => setSuccess(""), 3000);
-    } catch {
-      setError("Failed to add client");
+    } catch (error) {
+      setError(error?.message || "Failed to add client");
     } finally {
       setIsSubmitting(false);
     }
@@ -66,9 +70,9 @@ export default function Clients() {
       setClients(clients.filter((c) => c.id !== id));
       push("Client deleted", "success");
       setTimeout(() => setSuccess(""), 3000);
-    } catch {
+    } catch (error) {
       push("Failed to delete client", "error");
-      setError("Failed to delete client");
+      setError(error?.message || "Failed to delete client");
     }
   };
 
@@ -142,7 +146,7 @@ export default function Clients() {
 
       <div className="bg-white dark:bg-gray-900 text-black dark:text-white rounded-xl shadow-md overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-gray-500">Loading clients...</div>
+          <LoadingState message="Loading clients..." />
         ) : filteredClients.length === 0 ? (
           <div className="p-8 text-center text-gray-500">No clients found</div>
         ) : (

@@ -16,7 +16,7 @@ export default function PlatformConsole() {
   const [adminPassword, setAdminPassword] = useState("");
   const [showAdminPassword, setShowAdminPassword] = useState(false);
 
-  const getPlatformToken = () => localStorage.getItem("platformToken") || "";
+  const getStoredToken = () => localStorage.getItem("token") || "";
   const formInputClass =
     "w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 " +
     "hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 " +
@@ -24,7 +24,7 @@ export default function PlatformConsole() {
 
   const getAuthHeaders = () => ({
     "Content-Type": "application/json",
-    Authorization: `Bearer ${getPlatformToken()}`,
+    Authorization: `Bearer ${getStoredToken()}`,
   });
 
   const loadTenants = async () => {
@@ -47,10 +47,10 @@ export default function PlatformConsole() {
   };
 
   useEffect(() => {
-    const token = getPlatformToken();
-    console.log("TOKEN:", token);
+    const token = getStoredToken();
 
     if (!token) {
+      window.alert("Authentication token missing. Please login again.");
       window.location.href = "/#/platform/login";
       return;
     }

@@ -6,6 +6,10 @@ const inventorySchema = new mongoose.Schema({
     ref: "Tenant",
     required: true,
   },
+  adminId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "TenantAdmin",
+  },
   type: {
     type: String,
     required: true
@@ -39,5 +43,6 @@ const inventorySchema = new mongoose.Schema({
 inventorySchema.index({ date: -1, createdAt: -1 });
 inventorySchema.index({ type: 1, date: -1 });
 inventorySchema.index({ tenantId: 1, date: -1, createdAt: -1 });
+inventorySchema.index({ tenantId: 1, adminId: 1, date: -1, createdAt: -1 });
 
 module.exports = mongoose.model("Inventory", inventorySchema);

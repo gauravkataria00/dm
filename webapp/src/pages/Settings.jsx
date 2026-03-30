@@ -1,6 +1,7 @@
 import MainLayout from "../components/layout/MainLayout";
 import { useState } from "react";
 import { useToast } from "../context/ToastContext";
+import { DEFAULT_REPORT_WHATSAPP_PHONE } from "../services/config";
 
 export default function Settings() {
   const getStoredRate = (key, fallback) => {
@@ -26,6 +27,9 @@ export default function Settings() {
   );
   const [dairyName, setDairyName] = useState(() => getStoredText("dairyName", "Dairy Manager Pro"));
   const [ownerName, setOwnerName] = useState(() => getStoredText("ownerName", ""));
+  const [reportWhatsAppPhone, setReportWhatsAppPhone] = useState(() =>
+    getStoredText("reportWhatsAppPhone", DEFAULT_REPORT_WHATSAPP_PHONE)
+  );
   const { push } = useToast();
 
   const saveSettings = () => {
@@ -34,6 +38,7 @@ export default function Settings() {
     localStorage.setItem("autoOpenWhatsAppAfterSave", String(autoOpenWhatsAppAfterSave));
     localStorage.setItem("dairyName", String(dairyName || "").trim() || "Dairy Manager Pro");
     localStorage.setItem("ownerName", String(ownerName || "").trim());
+    localStorage.setItem("reportWhatsAppPhone", String(reportWhatsAppPhone || "").replace(/\D/g, ""));
     push("Settings saved", "success");
   };
 
@@ -123,6 +128,18 @@ export default function Settings() {
                 placeholder="Enter owner name"
                 value={ownerName}
                 onChange={(e) => setOwnerName(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">
+                Report WhatsApp Number (country code + number)
+              </label>
+              <input
+                type="tel"
+                className="w-full px-4 py-3 text-black dark:text-white bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
+                placeholder="e.g. 919999888877"
+                value={reportWhatsAppPhone}
+                onChange={(e) => setReportWhatsAppPhone(e.target.value.replace(/\D/g, ""))}
               />
             </div>
           </div>

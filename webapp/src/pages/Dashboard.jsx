@@ -1,7 +1,8 @@
 import MainLayout from "../components/layout/MainLayout";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../context/ToastContext";
+import ErrorState from "../components/common/ErrorState";
 import {
   getClients,
   getMilkEntries,
@@ -16,9 +17,11 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { push } = useToast();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isDailyClosing, setIsDailyClosing] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState("today");
+  const hasLoadedRef = useRef(false);
   const [dashboardData, setDashboardData] = useState({
     stats: {
       totalClients: 0,
@@ -62,6 +65,9 @@ export default function Dashboard() {
       .sort((a, b) => dateGetter(b) - dateGetter(a));
 
   useEffect(() => {
+    if (hasLoadedRef.current) return;
+    hasLoadedRef.current = true;
+
     loadDashboardData();
     
     // Set up automatic refresh every 60 seconds
@@ -75,13 +81,12 @@ export default function Dashboard() {
 
   const loadDashboardData = async () => {
     try {
+      setError("");
       if (loading) {
         setLoading(true);
       } else {
         setIsRefreshing(true);
       }
-
-      console.log("Starting dashboard data load...");
 
       const [
         clientsResult,
@@ -106,21 +111,18 @@ export default function Dashboard() {
       const advances = advancesResult.status === "fulfilled" ? advancesResult.value : [];
       const todayInventory = todayInventoryResult.status === "fulfilled" ? todayInventoryResult.value : {};
 
-      if (clientsResult.status !== "fulfilled") console.warn("Failed to load clients:", clientsResult.reason);
-      if (milkEntriesResult.status !== "fulfilled") console.warn("Failed to load milk entries:", milkEntriesResult.reason);
-      if (settlementsResult.status !== "fulfilled") console.warn("Failed to load settlements:", settlementsResult.reason);
-      if (paymentsResult.status !== "fulfilled") console.warn("Failed to load payments:", paymentsResult.reason);
-      if (advancesResult.status !== "fulfilled") console.warn("Failed to load advances:", advancesResult.reason);
-      if (todayInventoryResult.status !== "fulfilled") console.warn("Failed to load today inventory:", todayInventoryResult.reason);
+      const failedCount = [
+        clientsResult,
+        milkEntriesResult,
+        settlementsResult,
+        paymentsResult,
+        advancesResult,
+        todayInventoryResult,
+      ].filter((result) => result.status !== "fulfilled").length;
 
-      console.log("Clients loaded:", clients.length);
-      console.log("Milk entries loaded:", milkEntries.length);
-      console.log("Settlements loaded:", settlements.length);
-      console.log("Payments loaded:", payments.length);
-      console.log("Advances loaded:", advances.length);
-      console.log("Today inventory loaded:", todayInventory);
-
-      console.log("All data loaded successfully");
+      if (failedCount > 0) {
+        setError(`Some data could not be loaded (${failedCount} failed requests).`);
+      }
 
       // Calculate today's date and this month
       const today = new Date().toISOString().split('T')[0];
@@ -184,8 +186,6 @@ export default function Dashboard() {
       // Generate monthly trends
       const monthlyTrends = generateMonthlyTrends(milkEntries);
 
-      console.log("Dashboard data calculated successfully");
-
       setDashboardData({
         stats,
         recentActivities,
@@ -193,11 +193,8 @@ export default function Dashboard() {
         monthlyTrends,
         financialSummary
       });
-
-      console.log("Dashboard loaded successfully!");
-
     } catch (error) {
-      console.error("Error loading dashboard data:", error);
+      setError(error?.message || "Failed to load dashboard data");
       // Don't set error state - show dashboard with empty data instead
       setDashboardData({
         stats: {
@@ -411,6 +408,8 @@ export default function Dashboard() {
   return (
     <MainLayout>
       <div className="px-4 sm:px-6 lg:px-8 py-6 transition-all duration-300">
+        {error ? <div className="mb-6"><ErrorState message={error} onRetry={loadDashboardData} /></div> : null}
+
         {/* Header */}
         <div className="mb-10">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
